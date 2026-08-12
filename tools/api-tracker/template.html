@@ -1,0 +1,531 @@
+<title>wxrks API changes</title>
+<style>
+/*FONTS*/
+  /* Layout, palette and type follow trust.wxrks.com: white top bar with a
+     #DCDCE8 hairline, tinted hero band with a wave, 14px/500 tabs under a
+     2px accent underline, and flat white 6px cards. */
+  :root {
+    --ground: #ffffff;
+    --band: #f5f0ee;
+    --surface: #ffffff;
+    --surface-sunk: #f7f7fa;
+    --line: #dcdce8;
+    --line-soft: #ececf3;
+    --ink: #151414;
+    --ink-body: #18181d;
+    --ink-soft: #545352;
+    --ink-mute: #78777d;
+    --accent: #771fcb;
+    --link: #771fcb;
+    --ok: #0d7a4a;
+    --ok-bg: #d3fce6;
+    --critical: #b3261e;
+    --critical-bg: #fde8e6;
+    --warning: #8a5a00;
+    --warning-bg: #fbf0d9;
+    --additive: #0d7a4a;
+    --additive-bg: #d3fce6;
+    --docs: #545352;
+    --docs-bg: #eeeef4;
+    --sans: 'Inter', -apple-system, system-ui, Ubuntu, 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    --shell: 1200px;
+    --column: 823px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131316;
+      --band: #1c1a1d;
+      --surface: #1a1a1e;
+      --surface-sunk: #212127;
+      --line: #33333d;
+      --line-soft: #2a2a33;
+      --ink: #f2f2f5;
+      --ink-body: #e7e7ec;
+      --ink-soft: #b3b2b8;
+      --ink-mute: #8b8a92;
+      --accent: #c79bf5;
+      --link: #c79bf5;
+      --ok: #6cd3a0;
+      --ok-bg: #14301f;
+      --critical: #ff9a90;
+      --critical-bg: #331e1c;
+      --warning: #e0b060;
+      --warning-bg: #2e2617;
+      --additive: #6cd3a0;
+      --additive-bg: #14301f;
+      --docs: #b3b2b8;
+      --docs-bg: #26262e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131316;
+    --band: #1c1a1d;
+    --surface: #1a1a1e;
+    --surface-sunk: #212127;
+    --line: #33333d;
+    --line-soft: #2a2a33;
+    --ink: #f2f2f5;
+    --ink-body: #e7e7ec;
+    --ink-soft: #b3b2b8;
+    --ink-mute: #8b8a92;
+    --accent: #c79bf5;
+    --link: #c79bf5;
+    --ok: #6cd3a0;
+    --ok-bg: #14301f;
+    --critical: #ff9a90;
+    --critical-bg: #331e1c;
+    --warning: #e0b060;
+    --warning-bg: #2e2617;
+    --additive: #6cd3a0;
+    --additive-bg: #14301f;
+    --docs: #b3b2b8;
+    --docs-bg: #26262e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink-body);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 0 clamp(1.1rem, 4vw, 2.5rem);
+  }
+
+  a { color: var(--link); }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  /* ---- top bar ----------------------------------------------------- */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .shell {
+    height: 73px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #151414;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: .5rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    flex: none;
+  }
+  :root[data-theme="dark"] .mark { background: #f2f2f5; color: #151414; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .mark { background: #f2f2f5; color: #151414; }
+  }
+  .divider { width: 1px; height: 26px; background: var(--line); flex: none; }
+  .topbar strong {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: .005em;
+  }
+
+  /* ---- hero band --------------------------------------------------- */
+  .hero {
+    position: relative;
+    background: var(--band);
+    overflow: hidden;
+  }
+  .hero .shell {
+    position: relative;
+    z-index: 1;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 5rem;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .hero p {
+    margin: 0;
+    max-width: 46rem;
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+  .wave {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    width: 100%;
+    height: 90px;
+    display: block;
+    fill: var(--ground);
+  }
+
+  /* ---- tabs -------------------------------------------------------- */
+  .tabs { border-bottom: 1px solid var(--line); background: var(--ground); }
+  .tabs .shell { display: flex; gap: 1.5rem; overflow-x: auto; }
+  .tabs button {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: .5rem 0;
+    margin-bottom: -1px;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .12s ease, border-color .12s ease;
+  }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button[aria-selected="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+  .tabs .count {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-mute);
+    font-weight: 400;
+  }
+  .tabs button[aria-selected="true"] .count { color: var(--ink-soft); }
+
+  /* ---- main -------------------------------------------------------- */
+  main { padding: 2.5rem 0 5rem; }
+  .column { max-width: var(--column); }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .75rem;
+    margin-bottom: 1.25rem;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: .005em;
+    color: var(--ink);
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    background: var(--ok-bg);
+    color: var(--ok);
+    border-radius: 999px;
+    padding: .2rem .625rem;
+    font-size: .8125rem;
+    font-weight: 500;
+  }
+  .status-pill[data-state="attention"] { background: var(--critical-bg); color: var(--critical); }
+  .status-pill svg { width: .875rem; height: .875rem; fill: currentColor; flex: none; }
+  .status-pill .icon-alert { display: none; }
+  .status-pill[data-state="attention"] .icon-ok { display: none; }
+  .status-pill[data-state="attention"] .icon-alert { display: block; }
+  .section-head .spacer { flex: 1 1 auto; }
+  .section-head .aside { font-size: .875rem; color: var(--ink-mute); }
+
+  /* ---- entry cards ------------------------------------------------- */
+  .feed { display: flex; flex-direction: column; gap: 1rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .entry { padding: 1.25rem 1.375rem; display: flex; flex-direction: column; gap: .625rem; }
+  .entry[hidden] { display: none; }
+  .entry-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .entry-head time {
+    font-size: .8125rem;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .75rem;
+    font-weight: 500;
+    border-radius: 4px;
+    padding: .15rem .5rem;
+    white-space: nowrap;
+  }
+  .tag svg { width: .75rem; height: .75rem; fill: currentColor; flex: none; }
+  .tag-breaking { background: var(--critical-bg); color: var(--critical); }
+  .tag-review   { background: var(--warning-bg);  color: var(--warning); }
+  .tag-additive { background: var(--additive-bg); color: var(--additive); }
+  .tag-docs     { background: var(--docs-bg);     color: var(--docs); }
+
+  .entry h3 {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: .005em;
+    line-height: 1.4;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .entry .summary { margin: 0; color: var(--ink-soft); max-width: 68ch; }
+  .entry .endpoint { margin: 0; overflow-x: auto; }
+  .entry .endpoint code {
+    font-family: var(--mono);
+    font-size: .8125rem;
+    background: var(--surface-sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: .15rem .4rem;
+    white-space: nowrap;
+    color: var(--ink-body);
+  }
+  .entry .action {
+    background: var(--surface-sunk);
+    border-radius: 4px;
+    padding: .75rem .875rem;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+  }
+  .entry .action-label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--ink-mute);
+    letter-spacing: .02em;
+  }
+  .entry .action p { margin: 0; max-width: 68ch; }
+  .entry .no-action, .entry .effective, .entry .docs-link {
+    margin: 0;
+    font-size: .875rem;
+    color: var(--ink-mute);
+  }
+  /* Machine-detected entries carry a visible provenance note so they are never
+     mistaken for reviewed guidance. */
+  .entry .detected {
+    margin: 0;
+    font-size: .875rem;
+    color: var(--ink-mute);
+    border-left: 2px solid var(--line-strong);
+    padding-left: .7rem;
+  }
+  .entry .effective strong { color: var(--ink); font-weight: 600; }
+  .no-match { color: var(--ink-mute); margin: 0; display: none; }
+  .feed[data-empty="true"] .no-match { display: block; }
+  .empty { color: var(--ink-mute); margin: 0; }
+
+  /* ---- reference card grid ----------------------------------------- */
+  .panel { margin-top: 3rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: 1rem;
+  }
+  .grid .card { padding: 1.25rem 1.375rem; display: flex; flex-direction: column; gap: .625rem; }
+  .grid .card h3 {
+    margin: 0;
+    font-size: .9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .grid .card p { margin: 0; font-size: .9375rem; color: var(--ink-soft); }
+  .grid .card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: .9375rem;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    font-size: .875rem;
+    color: var(--ink-mute);
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+  }
+
+  @media (max-width: 40rem) {
+    .hero .shell { min-height: 220px; padding-bottom: 4rem; }
+    .hero h1 { font-size: 1.625rem; }
+    .wave { height: 55px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<header class="topbar">
+  <div class="shell">
+    <span class="mark" aria-hidden="true">wxrks</span>
+    <span class="divider" aria-hidden="true"></span>
+    <strong>wxrks's API changes</strong>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="shell">
+    <h1>API changes</h1>
+    <p>
+      This page tracks every update to the wxrks API, so you can see what's new and keep your
+      integration on the latest version.
+    </p>
+    <p>
+      Each entry says whether it needs a change on your side or is simply there for you to pick up.
+      Check it before you ship, and tell us if you spot an update that isn't listed.
+    </p>
+  </div>
+  <svg class="wave" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 62C240 18 420 78 700 58 940 41 1160 88 1440 44V90H0Z" />
+  </svg>
+</div>
+
+<nav class="tabs" aria-label="Filter changes by impact">
+  <div class="shell" role="tablist">
+    <button type="button" role="tab" data-filter="all" aria-selected="true">All</button>
+    <button type="button" role="tab" data-filter="breaking" aria-selected="false">Action needed</button>
+    <button type="button" role="tab" data-filter="review" aria-selected="false">Worth checking</button>
+    <button type="button" role="tab" data-filter="additive" aria-selected="false">New</button>
+    <button type="button" role="tab" data-filter="docs" aria-selected="false">Documentation</button>
+  </div>
+</nav>
+
+<main>
+  <div class="shell">
+    <div class="column">
+      <div class="section-head">
+        <h2>Changes</h2>
+        <span class="status-pill" id="status" data-breaking="<!--BREAKING-->">
+          <svg class="icon-ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3.1 4.9-3.9 3.9a.75.75 0 0 1-1.06 0L4.9 8.96a.75.75 0 1 1 1.06-1.06l.71.7 3.37-3.36a.75.75 0 0 1 1.06 1.06Z"/></svg>
+          <svg class="icon-alert" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 3a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5.25A.75.75 0 0 1 8 4.5Zm0 6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z"/></svg>
+          <span id="verdict">No updates need action</span>
+        </span>
+        <span class="spacer"></span>
+        <span class="aside"><!--ENDPOINTS--> endpoints tracked · checked <!--CHECKED--></span>
+      </div>
+
+      <div class="feed" id="feed">
+        <!--ENTRIES-->
+        <p class="no-match">No changes in this category.</p>
+      </div>
+
+      <section class="panel">
+        <div class="section-head"><h2>How to read this page</h2></div>
+        <div class="grid">
+          <div class="card">
+            <h3><span class="tag tag-breaking">Action needed</span></h3>
+            <p>Your integration needs an update to stay on the current version: an endpoint or
+              field that moved, a parameter that became required, or a change to authentication.</p>
+          </div>
+          <div class="card">
+            <h3><span class="tag tag-review">Worth checking</span></h3>
+            <p>An update that may or may not apply to you: a new field whose requirement isn't
+              settled, a header change, a reorganised endpoint. Worth a look at your integration.</p>
+          </div>
+          <div class="card">
+            <h3><span class="tag tag-additive">New</span></h3>
+            <p>Something new you can pick up: a new endpoint, a new optional parameter, or an extra
+              field in a response. Adopt it when you're ready, or leave your calls as they are.</p>
+          </div>
+          <div class="card">
+            <h3><span class="tag tag-docs">Documentation</span></h3>
+            <p>Wording, examples or structure in the documentation. No change in API behaviour.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head"><h2>Where this comes from</h2></div>
+        <div class="card" style="padding:1.25rem 1.375rem;display:flex;flex-direction:column;gap:.75rem">
+          <p style="margin:0;color:var(--ink-soft)">
+            We compare the full published API surface at
+            <a href="https://dev.wxrks.com/" target="_blank" rel="noopener">dev.wxrks.com</a>
+            against the previous known state and record what moved. That covers every documented
+            endpoint along with its parameters, request body and response shape. The date on each
+            entry is the date we detected the change.
+          </p>
+          <p style="margin:0;color:var(--ink-soft)">
+            One caveat worth being straight about: this tracks the API as documented. An update that
+            ships without the documentation changing won't appear here, so if you come across one,
+            tell us. That's a gap we want to know about.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        <p style="margin:0">
+          Want more detail on any of these, or expected an update that isn't listed?
+          A short reply is plenty: <!--CONTACT-->
+        </p>
+        <p style="margin:0">Let's make it <em>wxrks</em>!</p>
+      </footer>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function () {
+    var pill = document.getElementById('status');
+    var breaking = parseInt(pill.getAttribute('data-breaking'), 10) || 0;
+    if (breaking > 0) {
+      pill.setAttribute('data-state', 'attention');
+      document.getElementById('verdict').textContent =
+        breaking === 1 ? '1 update needs action'
+                       : breaking + ' updates need action';
+    }
+
+    var feed = document.getElementById('feed');
+    var entries = Array.prototype.slice.call(feed.querySelectorAll('.entry'));
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+
+    // Show each tab's count so an empty category is obvious before clicking it.
+    tabs.forEach(function (tab) {
+      var want = tab.getAttribute('data-filter');
+      var n = want === 'all'
+        ? entries.length
+        : entries.filter(function (e) { return e.getAttribute('data-impact') === want; }).length;
+      var count = document.createElement('span');
+      count.className = 'count';
+      count.textContent = ' ' + n;
+      tab.appendChild(count);
+
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
+        var shown = 0;
+        entries.forEach(function (entry) {
+          var match = want === 'all' || entry.getAttribute('data-impact') === want;
+          entry.hidden = !match;
+          if (match) shown++;
+        });
+        feed.setAttribute('data-empty', String(shown === 0));
+      });
+    });
+  })();
+</script>

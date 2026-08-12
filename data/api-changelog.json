@@ -1,0 +1,15 @@
+{
+  "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
+  "last_checked": "11 August 2026",
+  "endpoint_count": 148,
+  "contact": "write to Gi at giovanna@wxrks.com.",
+  "entries": [
+    {
+      "date": "2026-08-11",
+      "impact": "docs",
+      "title": "Change tracking starts here",
+      "summary": "We started tracking the wxrks API surface today, covering 148 documented endpoints across 19 sections along with their parameters, request bodies and response shapes. This entry is the baseline rather than a change. From here on, anything that moves in the API gets an entry on this page.",
+      "docs_url": "https://dev.wxrks.com/"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+name: Track API changes
+
+# Checks the published API documentation hourly. When the documented surface has
+# moved, it writes change log entries stating what the diff found, rebuilds the
+# page, and commits. GitHub Pages redeploys on that commit, so the site updates
+# without anyone touching it.
+#
+# The entries it writes are marked `auto` and the page says they were detected
+# automatically. They state mechanical facts only, never guidance about whether a
+# change is required, because nothing here can know that. Replacing an auto entry
+# with reviewed wording is a normal edit to data/api-changelog.json.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: track-api-changes
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Detect changes and rebuild the page
+        id: track
+        run: |
+          set +e
+          python3 tools/api-tracker/apitrack.py auto --out .
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # 0 = nothing moved, 10 = moved and the page was rebuilt. Anything else is
+          # a real failure (docs unreachable, bad payload) and should fail the run.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 10 ]; then
+            echo "apitrack exited $code"
+            exit "$code"
+          fi
+
+      - name: Commit and push
+        if: steps.track.outputs.code == '10'
+        run: |
+          git config user.name "wxrks API tracker"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing staged; skipping commit"
+            exit 0
+          fi
+          git commit -m "API changes detected on $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.track.outputs.code }}" = "10" ]; then
+            echo "API surface moved; page rebuilt and pushed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No change in the documented API surface." >> "$GITHUB_STEP_SUMMARY"
+          fi
