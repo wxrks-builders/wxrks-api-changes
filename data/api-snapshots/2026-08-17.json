@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-08-17T12:19:21+00:00",
+  "captured_at": "2026-08-17T13:02:58+00:00",
   "collection": {
     "collection_id": "e105366f-d614-40cd-8be7-004037f441a2",
     "description": "fe3d07ab8228",
@@ -17,6 +17,7 @@
     "DELETE /api/v3/payable/:payableId/invoice-file": "12fd7cd9-0f8c-4891-a4b8-7985292faae5",
     "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk": "0b6cb072-0456-484c-b9f0-8a74130a2c49",
     "DELETE /api/v3/project/:projectUUID/cost/:costUUID": "13dd2098-c7cb-4231-a046-63643b35872a",
+    "DELETE /api/v3/project/:projectUUID/resource/:projectResourceUUID": "940306d0-863c-40ce-98cf-140a3fac106a",
     "DELETE /api/v3/task/:taskUUID/assignment": "501d56e5-a685-4ac3-9b4b-7f006cb6d512",
     "DELETE /api/v3/user/:userUUID/rate/:userRateUUID": "f76b2cc1-7946-4a07-8ee7-9eb28d5fcd28",
     "DELETE /api/v3/user/:userUUID/rate/:userRateUUID/detail/:rateDetailUUID": "6358934a-4925-490c-b24b-27ade1c338ad",
@@ -70,12 +71,16 @@
     "GET /api/v3/project/:projectUUID/costs/lang-pair": "f2d414a1-dbe6-400f-b752-1c39b590a7d7",
     "GET /api/v3/project/:projectUUID/download": "0585e61a-3ff2-4076-a14d-d16110f58744",
     "GET /api/v3/project/:projectUUID/download/:requestUUID/status": "0b23e82d-1fe2-459f-8e4f-4eeea62c69d2",
+    "GET /api/v3/project/:projectUUID/ingestion/status": "12ba8ab1-97e4-45eb-a775-8244d9831073",
     "GET /api/v3/project/:projectUUID/logfile": "acde5145-d626-4c31-a47f-89a71ea7b2d7",
     "GET /api/v3/project/:projectUUID/logfile/:logfileUUID/download-async": "7c1cd700-2207-4883-a626-d1a7a01369c8",
     "GET /api/v3/project/:projectUUID/logfile/:logfileUUID/download/:requestUUID/status": "f40e5022-1b13-4e58-b02a-5f774d054770",
     "GET /api/v3/project/:projectUUID/logfile/:logfileUUID/summary": "25c66199-3aab-491d-bfd6-d0b00158f88c",
+    "GET /api/v3/project/:projectUUID/payment-type": "f16b194f-dc6c-4ade-a124-e622d30a67da",
+    "GET /api/v3/project/:projectUUID/process-summary": "ec110fc4-5d33-4dde-8e39-5739740752ba",
     "GET /api/v3/project/:projectUUID/profitability": "fc1b1bc2-f83e-47e7-9991-5672ccf1050a",
     "GET /api/v3/project/:projectUUID/resource/simple": "ccf82bb2-e01d-4ba6-8cc0-779af655684e",
+    "GET /api/v3/project/:projectUUID/statuses": "3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb",
     "GET /api/v3/project/:projectUUID/total-costs": "55f571de-d7a3-4716-a085-aa202c7c154d",
     "GET /api/v3/project/:projectUUID/translation-kit-job/:requestUUID [Download Export Project]": "20a48942-d2ee-4a02-a5c9-2dd6c0921307",
     "GET /api/v3/project/:projectUUID/translation-kit-job/:requestUUID [Download Project Translated Files]": "5177451f-8f20-46de-b32e-5be7c3835073",
@@ -153,6 +158,7 @@
     "POST /api/v3/user": "25cb6407-3758-491c-9d2f-b7a2e8d23293",
     "POST /api/v3/user/:userUUID/rate": "93d090c1-e72b-4356-a117-154918a98db5",
     "POST /api/v3/user/:userUUID/role/:roleName": "81931864-5938-46d7-a217-5f20d002552d",
+    "POST /api/v3/webhook": "34723ba9-9808-497e-9f70-ae93ddaf8e94",
     "PUT /api/v1/translation-memory/:tmUuid/translation-unit/:tuId": "7855e279-3c0c-4b89-8677-feb0978d8cb7",
     "PUT /api/v3/connector/eloqua/config": "c4ffbcc7-97cd-43ab-8124-0e0cb91ec2de",
     "PUT /api/v3/connector/github/config": "7211c4cf-95eb-4d7b-8a0d-597d4b001243",
@@ -179,7 +185,7 @@
     "POST /api/v3/project/:projectUUID/work-unit",
     "PUT /api/v3/project/:projectUUID/resource/:projectResourceUUID/content"
   ],
-  "endpoint_count": 160,
+  "endpoint_count": 166,
   "endpoints": {
     "DELETE /api/v1/translation-memory/:tmUuid/:tuId/segment": {
       "auth": null,
@@ -490,6 +496,42 @@
         }
       },
       "route": "DELETE /api/v3/project/:projectUUID/cost/:costUUID"
+    },
+    "DELETE /api/v3/project/:projectUUID/resource/:projectResourceUUID": {
+      "auth": "noauth",
+      "body": {
+        "approximate": false,
+        "fields": [
+          "name",
+          "notes",
+          "path"
+        ],
+        "mode": "raw"
+      },
+      "desc": "205a4eb9d188",
+      "folder": "Projects",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "DELETE",
+      "name": "Delete Project Resource",
+      "path": "/api/v3/project/:projectUUID/resource/:projectResourceUUID",
+      "path_vars": [
+        "projectResourceUUID",
+        "projectUUID"
+      ],
+      "query": {
+        "processingTaskId": {
+          "desc": "576fd4e1d090",
+          "optional": true
+        }
+      },
+      "responses": {
+        "201": {
+          "fields": []
+        }
+      },
+      "route": "DELETE /api/v3/project/:projectUUID/resource/:projectResourceUUID"
     },
     "DELETE /api/v3/task/:taskUUID/assignment": {
       "auth": null,
@@ -3490,6 +3532,32 @@
       },
       "route": "GET /api/v3/project/:projectUUID/download/:requestUUID/status"
     },
+    "GET /api/v3/project/:projectUUID/ingestion/status": {
+      "auth": "noauth",
+      "body": {
+        "approximate": false,
+        "fields": [],
+        "mode": null
+      },
+      "desc": "bbe94cd2e21a",
+      "folder": "Projects",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "GET",
+      "name": "Get Project Ingestion Status",
+      "path": "/api/v3/project/:projectUUID/ingestion/status",
+      "path_vars": [
+        "projectUUID"
+      ],
+      "query": {},
+      "responses": {
+        "200": {
+          "fields": []
+        }
+      },
+      "route": "GET /api/v3/project/:projectUUID/ingestion/status"
+    },
     "GET /api/v3/project/:projectUUID/logfile": {
       "auth": null,
       "body": {
@@ -3668,6 +3736,62 @@
       },
       "route": "GET /api/v3/project/:projectUUID/logfile/:logfileUUID/summary"
     },
+    "GET /api/v3/project/:projectUUID/payment-type": {
+      "auth": "noauth",
+      "body": {
+        "approximate": false,
+        "fields": [],
+        "mode": null
+      },
+      "desc": "e3b0c44298fc",
+      "folder": "Projects",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "GET",
+      "name": "Get Project Payment Type",
+      "path": "/api/v3/project/:projectUUID/payment-type",
+      "path_vars": [
+        "projectUUID"
+      ],
+      "query": {},
+      "responses": {
+        "200": {
+          "fields": []
+        }
+      },
+      "route": "GET /api/v3/project/:projectUUID/payment-type"
+    },
+    "GET /api/v3/project/:projectUUID/process-summary": {
+      "auth": "noauth",
+      "body": {
+        "approximate": false,
+        "fields": [],
+        "mode": null
+      },
+      "desc": "229b4159a0ac",
+      "folder": "Projects",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "GET",
+      "name": "Get Project Process Summary",
+      "path": "/api/v3/project/:projectUUID/process-summary",
+      "path_vars": [
+        "projectUUID"
+      ],
+      "query": {},
+      "responses": {
+        "200": {
+          "fields": [
+            "[]",
+            "[].count",
+            "[].status"
+          ]
+        }
+      },
+      "route": "GET /api/v3/project/:projectUUID/process-summary"
+    },
     "GET /api/v3/project/:projectUUID/profitability": {
       "auth": "noauth",
       "body": {
@@ -3730,6 +3854,34 @@
         }
       },
       "route": "GET /api/v3/project/:projectUUID/resource/simple"
+    },
+    "GET /api/v3/project/:projectUUID/statuses": {
+      "auth": "noauth",
+      "body": {
+        "approximate": false,
+        "fields": [],
+        "mode": null
+      },
+      "desc": "e3b0c44298fc",
+      "folder": "Projects",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "GET",
+      "name": "List Project Task Statuses",
+      "path": "/api/v3/project/:projectUUID/statuses",
+      "path_vars": [
+        "projectUUID"
+      ],
+      "query": {},
+      "responses": {
+        "200": {
+          "fields": [
+            "[]"
+          ]
+        }
+      },
+      "route": "GET /api/v3/project/:projectUUID/statuses"
     },
     "GET /api/v3/project/:projectUUID/total-costs": {
       "auth": "noauth",
@@ -4923,7 +5075,7 @@
         "fields": [],
         "mode": null
       },
-      "desc": "b60ed412174f",
+      "desc": "e3b0c44298fc",
       "folder": "Workflows",
       "headers": [
         "X-AUTH-TOKEN"
@@ -7626,6 +7778,41 @@
         }
       },
       "route": "POST /api/v3/user/:userUUID/role/:roleName"
+    },
+    "POST /api/v3/webhook": {
+      "auth": null,
+      "body": {
+        "approximate": false,
+        "fields": [
+          "active",
+          "secret",
+          "type",
+          "url"
+        ],
+        "mode": "raw"
+      },
+      "desc": "3d5610380dc2",
+      "folder": "Webhooks",
+      "headers": [
+        "X-AUTH-TOKEN"
+      ],
+      "method": "POST",
+      "name": "Create Webhook",
+      "path": "/api/v3/webhook",
+      "path_vars": [],
+      "query": {},
+      "responses": {
+        "200 - Success": {
+          "fields": [
+            "active",
+            "createdAt",
+            "secret",
+            "url",
+            "uuid"
+          ]
+        }
+      },
+      "route": "POST /api/v3/webhook"
     },
     "PUT /api/v1/translation-memory/:tmUuid/translation-unit/:tuId": {
       "auth": null,

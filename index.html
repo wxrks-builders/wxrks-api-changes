@@ -580,7 +580,7 @@
           <span id="verdict">No updates need action</span>
         </span>
         <span class="spacer"></span>
-        <span class="aside">160 endpoints tracked · checked 17 August 2026</span>
+        <span class="aside">166 endpoints tracked · checked 17 August 2026</span>
       </div>
 
       <div class="feed" id="feed">
@@ -610,12 +610,21 @@
     <span class="tag tag-additive">New capability</span>
   </header>
   <h4>New endpoints and fields</h4>
-  <p class="summary">13 endpoints changed.</p>
+  <p class="summary">19 endpoints changed.</p>
   <ul class="changes">
     <li>
       <p class="route">
         <a href="https://dev.wxrks.com/#0b6cb072-0456-484c-b9f0-8a74130a2c49" target="_blank" rel="noopener"><span class="verb">DELETE</span><code>/api/v3/project/:ProjectUUID/work-unit/bulk</code></a>
         <span class="route-name">Bulk Delete Work Units</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#940306d0-863c-40ce-98cf-140a3fac106a" target="_blank" rel="noopener"><span class="verb">DELETE</span><code>/api/v3/project/:projectUUID/resource/:projectResourceUUID</code></a>
+        <span class="route-name">Delete Project Resource</span>
       </p>
       <ul class="facts">
         <li>New endpoint in the Projects section</li>
@@ -677,6 +686,42 @@
     </li>
     <li>
       <p class="route">
+        <a href="https://dev.wxrks.com/#12ba8ab1-97e4-45eb-a775-8244d9831073" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/project/:projectUUID/ingestion/status</code></a>
+        <span class="route-name">Get Project Ingestion Status</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#f16b194f-dc6c-4ade-a124-e622d30a67da" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/project/:projectUUID/payment-type</code></a>
+        <span class="route-name">Get Project Payment Type</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#ec110fc4-5d33-4dde-8e39-5739740752ba" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/project/:projectUUID/process-summary</code></a>
+        <span class="route-name">Get Project Process Summary</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/project/:projectUUID/statuses</code></a>
+        <span class="route-name">List Project Task Statuses</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
         <a href="https://dev.wxrks.com/#d800b78b-2595-46d1-a981-e381c51196c5" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/user/:userUUID/rate</code></a>
         <span class="route-name">List User Rates</span>
       </p>
@@ -709,6 +754,15 @@
       </p>
       <ul class="facts">
         <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#34723ba9-9808-497e-9f70-ae93ddaf8e94" target="_blank" rel="noopener"><span class="verb">POST</span><code>/api/v3/webhook</code></a>
+        <span class="route-name">Create Webhook</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Webhooks section</li>
       </ul>
     </li>
     <li>

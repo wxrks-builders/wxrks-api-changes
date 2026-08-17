@@ -325,6 +325,18 @@ def _change(severity: str, kind: str, endpoint: str, detail: str, label: str = "
     }
 
 
+def named(paths) -> set:
+    """Drop the bare root-array marker from a set of field paths.
+
+    `field_paths` records a top-level JSON array as the path `[]`. That is meaningful
+    inside a snapshot but useless as customer copy — "new field: []" says nothing — and
+    it is redundant anyway: a response that changes shape also changes every prefixed
+    path beneath it. Filtered here rather than in `field_paths` so that snapshots
+    recorded before this existed still compare byte for byte.
+    """
+    return {p for p in paths if p != "[]"}
+
+
 def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
     changes: list[dict] = []
     label = new.get("name") or old.get("name") or ""
@@ -384,8 +396,8 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
         changes.append(_change("breaking" if concrete else "review", "body", key, label=label,
                                detail=f"request body format changed: {ob['mode']} -> {nb['mode']}"))
     else:
-        gone = sorted(set(ob["fields"]) - set(nb["fields"]))
-        new_fields = sorted(set(nb["fields"]) - set(ob["fields"]))
+        gone = sorted(named(ob["fields"]) - named(nb["fields"]))
+        new_fields = sorted(named(nb["fields"]) - named(ob["fields"]))
         if gone:
             # Fields read off the example body, so a docs edit looks identical to a
             # real removal. The reader compares against their own payload.
@@ -405,8 +417,8 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
         changes.append(_change("additive", "response", key, label=label,
                                detail=f"new documented response: {code}"))
     for code in sorted(set(old_r) & set(new_r)):
-        gone = sorted(set(old_r[code]["fields"]) - set(new_r[code]["fields"]))
-        added = sorted(set(new_r[code]["fields"]) - set(old_r[code]["fields"]))
+        gone = sorted(named(old_r[code]["fields"]) - named(new_r[code]["fields"]))
+        added = sorted(named(new_r[code]["fields"]) - named(old_r[code]["fields"]))
         if gone:
             # Worth checking rather than action needed: a field vanishing from a
             # response example matters only to a reader who actually reads that field.
@@ -1081,6 +1093,7 @@ def cmd_auto(args) -> int:
                            else f"{len(merged)} endpoints changed.")
         entry["_merged"] = True
 
+    folded = sum(1 for e in added if e.get("_merged"))
     added = [e for e in added if not e.pop("_merged", False)]
     data["entries"] = added + kept
     data["last_checked"] = f"{today.day} {today:%B %Y}"
@@ -1098,7 +1111,13 @@ def cmd_auto(args) -> int:
     counts = result["counts"]
     headline = " · ".join(f"{counts[s]} {s}" for s in SEVERITIES if counts[s])
     print(f"{today.isoformat()}: API surface moved — {headline}")
-    print(f"wrote {len(added)} entr{'y' if len(added) == 1 else 'ies'} and rebuilt the page")
+    # Both numbers matter: "wrote 0 entries" on a day that moved reads like a no-op
+    # when in fact the findings went into cards that were already there.
+    wrote = f"wrote {len(added)} new entr{'y' if len(added) == 1 else 'ies'}"
+    if folded:
+        wrote += (f" and folded {folded} into today's existing "
+                  f"card{'' if folded == 1 else 's'}")
+    print(f"{wrote}; rebuilt the page")
     return 10
 
 

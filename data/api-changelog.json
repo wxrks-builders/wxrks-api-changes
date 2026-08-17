@@ -1,7 +1,7 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
   "last_checked": "17 August 2026",
-  "endpoint_count": 160,
+  "endpoint_count": 166,
   "contact": "write to Gi at giovanna@wxrks.com.",
   "entries": [
     {
@@ -26,7 +26,7 @@
       "impact": "additive",
       "auto": true,
       "title": "New endpoints and fields",
-      "summary": "13 endpoints changed.",
+      "summary": "19 endpoints changed.",
       "changes": [
         {
           "endpoint": "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk",
@@ -35,6 +35,14 @@
             "New endpoint in the Projects section"
           ],
           "docs_url": "https://dev.wxrks.com/#0b6cb072-0456-484c-b9f0-8a74130a2c49"
+        },
+        {
+          "endpoint": "DELETE /api/v3/project/:projectUUID/resource/:projectResourceUUID",
+          "label": "Delete Project Resource",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#940306d0-863c-40ce-98cf-140a3fac106a"
         },
         {
           "endpoint": "DELETE /api/v3/user/:userUUID/rate/:userRateUUID",
@@ -85,6 +93,38 @@
           "docs_url": "https://dev.wxrks.com/#27d78e8d-6652-4778-83e7-bd5cd10b5a0f"
         },
         {
+          "endpoint": "GET /api/v3/project/:projectUUID/ingestion/status",
+          "label": "Get Project Ingestion Status",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#12ba8ab1-97e4-45eb-a775-8244d9831073"
+        },
+        {
+          "endpoint": "GET /api/v3/project/:projectUUID/payment-type",
+          "label": "Get Project Payment Type",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#f16b194f-dc6c-4ade-a124-e622d30a67da"
+        },
+        {
+          "endpoint": "GET /api/v3/project/:projectUUID/process-summary",
+          "label": "Get Project Process Summary",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#ec110fc4-5d33-4dde-8e39-5739740752ba"
+        },
+        {
+          "endpoint": "GET /api/v3/project/:projectUUID/statuses",
+          "label": "List Project Task Statuses",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
+        },
+        {
           "endpoint": "GET /api/v3/user/:userUUID/rate",
           "label": "List User Rates",
           "items": [
@@ -115,6 +155,14 @@
             "New endpoint in the Users / Rates section"
           ],
           "docs_url": "https://dev.wxrks.com/#93d090c1-e72b-4356-a117-154918a98db5"
+        },
+        {
+          "endpoint": "POST /api/v3/webhook",
+          "label": "Create Webhook",
+          "items": [
+            "New endpoint in the Webhooks section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#34723ba9-9808-497e-9f70-ae93ddaf8e94"
         },
         {
           "endpoint": "PUT /api/v3/user/:userUUID/rate/:userRateUUID",
