@@ -5,10 +5,14 @@ The published change tracker for the [wxrks API](https://dev.wxrks.com/), live a
 
 ## It updates itself
 
-A GitHub Action runs hourly. It fetches the published API documentation, compares it against the
-last recorded surface, and when something has moved it writes change log entries, rebuilds
-`index.html`, and commits. GitHub Pages redeploys on that commit, so the site follows the docs with
-no one touching it.
+A GitHub Action runs once a day, at **08:40 São Paulo time** (11:40 UTC). It fetches the published
+API documentation, compares it against the last recorded surface, and when something has moved it
+writes change log entries, rebuilds `index.html`, and commits. GitHub Pages redeploys on that commit,
+so the site follows the docs with no one touching it.
+
+Daily, not hourly: the change log is dated by day. Several runs in one day split that day's movement
+across duplicate entries and write extra snapshots, so one run a day is what keeps the history
+readable — one entry set per date, one snapshot per date.
 
 `.github/workflows/track.yml` is the whole schedule. You can also run it on demand from the
 **Actions** tab with **Run workflow**.
@@ -39,7 +43,7 @@ python3 tools/api-tracker/apitrack.py build --out .
 | `data/api-changelog.json` | The entries the page renders. This is the file to edit. |
 | `data/api-snapshots/` | Recorded API surfaces. A new one is stored only when something moved, so each date means a real change. |
 | `tools/api-tracker/` | The tracker: fetch, diff, classify, render. |
-| `.github/workflows/track.yml` | The hourly schedule. |
+| `.github/workflows/track.yml` | The daily schedule. |
 
 Do not hand-edit `index.html`. It is regenerated on every run and your edit would be lost.
 

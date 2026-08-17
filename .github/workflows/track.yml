@@ -1,9 +1,13 @@
 name: Track API changes
 
-# Checks the published API documentation hourly. When the documented surface has
-# moved, it writes change log entries stating what the diff found, rebuilds the
+# Checks the published API documentation once a day. When the documented surface
+# has moved, it writes change log entries stating what the diff found, rebuilds the
 # page, and commits. GitHub Pages redeploys on that commit, so the site updates
 # without anyone touching it.
+#
+# One run a day, not one an hour: the change log is dated by day, so several runs in
+# the same day split one day's movement across duplicate entries and extra snapshots.
+# Daily gives one entry set per date and keeps the snapshot history one-file-per-day.
 #
 # The entries it writes are marked `auto` and the page says they were detected
 # automatically. They state mechanical facts only, never guidance about whether a
@@ -12,7 +16,10 @@ name: Track API changes
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # 11:40 UTC = 08:40 in São Paulo (UTC-3 all year; Brazil dropped DST in 2019),
+    # so the day's result is already there when Gi starts. Off the top of the hour
+    # because GitHub delays scheduled runs queued at :00.
+    - cron: "40 11 * * *"
   workflow_dispatch:
 
 permissions:
