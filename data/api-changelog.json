@@ -1,9 +1,54 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
   "last_checked": "17 August 2026",
-  "endpoint_count": 151,
+  "endpoint_count": 154,
   "contact": "write to Gi at giovanna@wxrks.com.",
   "entries": [
+    {
+      "date": "2026-08-17",
+      "impact": "breaking",
+      "auto": true,
+      "title": "Changes to endpoints you may already be calling",
+      "summary": "POST /api/v3/user/:userUUID/rate: request field removed: userUuid, uuid.",
+      "endpoints": [
+        "POST /api/v3/user/:userUUID/rate"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "impact": "review",
+      "auto": true,
+      "title": "Changes worth checking against your integration",
+      "summary": "POST /api/v3/user/:userUUID/rate: new request field: rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate.",
+      "endpoints": [
+        "POST /api/v3/user/:userUUID/rate"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "impact": "additive",
+      "auto": true,
+      "title": "New endpoints and fields",
+      "summary": "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk: new endpoint in Projects; GET /api/v3/net-rate-settings/:netRateUuid: new endpoint in Net Rate; GET /api/v3/price-list: new endpoint in Price List; POST /api/v3/user/:userUUID/rate: 200 - Success response field added: orgUnitUuid, rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate, rateDetails[].userRateUuid, rateDetails[].uuid, userUuid, uuid.",
+      "endpoints": [
+        "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk",
+        "GET /api/v3/net-rate-settings/:netRateUuid",
+        "GET /api/v3/price-list",
+        "POST /api/v3/user/:userUUID/rate"
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "impact": "docs",
+      "auto": true,
+      "title": "Documentation updates",
+      "summary": "GET /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; POST /api/v3/user/:userUUID/rate: description text changed; POST /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: description text changed; PUT /api/v3/user/:userUUID/rate/:userRateUUID: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: renamed: Create User Rate Copy to Update User Rate.",
+      "endpoints": [
+        "GET /api/v3/user/:userUUID/rate",
+        "POST /api/v3/user/:userUUID/rate",
+        "PUT /api/v3/user/:userUUID/rate/:userRateUUID"
+      ]
+    },
     {
       "date": "2026-08-17",
       "impact": "additive",

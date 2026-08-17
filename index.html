@@ -458,17 +458,62 @@
     <div class="column">
       <div class="section-head">
         <h2>Changes</h2>
-        <span class="status-pill" id="status" data-breaking="0">
+        <span class="status-pill" id="status" data-breaking="1">
           <svg class="icon-ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3.1 4.9-3.9 3.9a.75.75 0 0 1-1.06 0L4.9 8.96a.75.75 0 1 1 1.06-1.06l.71.7 3.37-3.36a.75.75 0 0 1 1.06 1.06Z"/></svg>
           <svg class="icon-alert" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 3a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5.25A.75.75 0 0 1 8 4.5Zm0 6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z"/></svg>
           <span id="verdict">No updates need action</span>
         </span>
         <span class="spacer"></span>
-        <span class="aside">151 endpoints tracked · checked 17 August 2026</span>
+        <span class="aside">154 endpoints tracked · checked 17 August 2026</span>
       </div>
 
       <div class="feed" id="feed">
-        <article class="card entry" data-impact="additive">
+        <article class="card entry" data-impact="breaking">
+  <header class="entry-head">
+    <time datetime="2026-08-17">2026-08-17</time>
+    <span class="tag tag-breaking">Action needed</span>
+  </header>
+  <h3>Changes to endpoints you may already be calling</h3>
+  <p class="summary">POST /api/v3/user/:userUUID/rate: request field removed: userUuid, uuid.</p>
+  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
+  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+</article>
+<article class="card entry" data-impact="review">
+  <header class="entry-head">
+    <time datetime="2026-08-17">2026-08-17</time>
+    <span class="tag tag-review">Worth checking</span>
+  </header>
+  <h3>Changes worth checking against your integration</h3>
+  <p class="summary">POST /api/v3/user/:userUUID/rate: new request field: rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate.</p>
+  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
+  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+</article>
+<article class="card entry" data-impact="additive">
+  <header class="entry-head">
+    <time datetime="2026-08-17">2026-08-17</time>
+    <span class="tag tag-additive">New capability</span>
+  </header>
+  <h3>New endpoints and fields</h3>
+  <p class="summary">DELETE /api/v3/project/:ProjectUUID/work-unit/bulk: new endpoint in Projects; GET /api/v3/net-rate-settings/:netRateUuid: new endpoint in Net Rate; GET /api/v3/price-list: new endpoint in Price List; POST /api/v3/user/:userUUID/rate: 200 - Success response field added: orgUnitUuid, rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate, rateDetails[].userRateUuid, rateDetails[].uuid, userUuid, uuid.</p>
+  <p class="endpoint"><code>DELETE /api/v3/project/:ProjectUUID/work-unit/bulk</code></p>
+  <p class="endpoint"><code>GET /api/v3/net-rate-settings/:netRateUuid</code></p>
+  <p class="endpoint"><code>GET /api/v3/price-list</code></p>
+  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
+  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+</article>
+<article class="card entry" data-impact="docs">
+  <header class="entry-head">
+    <time datetime="2026-08-17">2026-08-17</time>
+    <span class="tag tag-docs">Documentation</span>
+  </header>
+  <h3>Documentation updates</h3>
+  <p class="summary">GET /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; POST /api/v3/user/:userUUID/rate: description text changed; POST /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: description text changed; PUT /api/v3/user/:userUUID/rate/:userRateUUID: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: renamed: Create User Rate Copy to Update User Rate.</p>
+  <p class="endpoint"><code>GET /api/v3/user/:userUUID/rate</code></p>
+  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
+  <p class="endpoint"><code>PUT /api/v3/user/:userUUID/rate/:userRateUUID</code></p>
+  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+</article>
+<article class="card entry" data-impact="additive">
   <header class="entry-head">
     <time datetime="2026-08-17">2026-08-17</time>
     <span class="tag tag-additive">New capability</span>
