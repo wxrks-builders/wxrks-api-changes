@@ -1,27 +1,24 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
   "last_checked": "17 August 2026",
-  "endpoint_count": 154,
+  "endpoint_count": 160,
   "contact": "write to Gi at giovanna@wxrks.com.",
   "entries": [
-    {
-      "date": "2026-08-17",
-      "impact": "breaking",
-      "auto": true,
-      "title": "Changes to endpoints you may already be calling",
-      "summary": "POST /api/v3/user/:userUUID/rate: request field removed: userUuid, uuid.",
-      "endpoints": [
-        "POST /api/v3/user/:userUUID/rate"
-      ]
-    },
     {
       "date": "2026-08-17",
       "impact": "review",
       "auto": true,
       "title": "Changes worth checking against your integration",
-      "summary": "POST /api/v3/user/:userUUID/rate: new request field: rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate.",
-      "endpoints": [
-        "POST /api/v3/user/:userUUID/rate"
+      "summary": "1 endpoint changed.",
+      "changes": [
+        {
+          "endpoint": "POST /api/v3/project/:projectUUID/download",
+          "label": "Download Project Translations Async",
+          "items": [
+            "A request body is now documented (raw); there was none before"
+          ],
+          "docs_url": "https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce"
+        }
       ]
     },
     {
@@ -29,12 +26,112 @@
       "impact": "additive",
       "auto": true,
       "title": "New endpoints and fields",
-      "summary": "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk: new endpoint in Projects; GET /api/v3/net-rate-settings/:netRateUuid: new endpoint in Net Rate; GET /api/v3/price-list: new endpoint in Price List; POST /api/v3/user/:userUUID/rate: 200 - Success response field added: orgUnitUuid, rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate, rateDetails[].userRateUuid, rateDetails[].uuid, userUuid, uuid.",
-      "endpoints": [
-        "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk",
-        "GET /api/v3/net-rate-settings/:netRateUuid",
-        "GET /api/v3/price-list",
-        "POST /api/v3/user/:userUUID/rate"
+      "summary": "13 endpoints changed.",
+      "changes": [
+        {
+          "endpoint": "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk",
+          "label": "Bulk Delete Work Units",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#0b6cb072-0456-484c-b9f0-8a74130a2c49"
+        },
+        {
+          "endpoint": "DELETE /api/v3/user/:userUUID/rate/:userRateUUID",
+          "label": "Delete User Rate",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#f76b2cc1-7946-4a07-8ee7-9eb28d5fcd28"
+        },
+        {
+          "endpoint": "DELETE /api/v3/user/:userUUID/rate/:userRateUUID/detail/:rateDetailUUID",
+          "label": "Delete User Rate Detail",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#6358934a-4925-490c-b24b-27ade1c338ad"
+        },
+        {
+          "endpoint": "GET /api/v3/net-rate-settings/:netRateUuid",
+          "label": "Get Net Rate Settings",
+          "items": [
+            "New endpoint in the Net Rate section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#9c502642-8f76-4156-817e-9cc9d279fccc"
+        },
+        {
+          "endpoint": "GET /api/v3/net-rate-settings/list-account",
+          "label": "List Account Net Rate Settings",
+          "items": [
+            "New endpoint in the Net Rate section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#f4db7f99-00f9-4d22-881f-2793bd1e854b"
+        },
+        {
+          "endpoint": "GET /api/v3/net-rate-settings/list-org-unit-account/:orgUnitUUID",
+          "label": "List Org Unit Net Rate Settings",
+          "items": [
+            "New endpoint in the Net Rate section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#8e07e823-fdbb-4e50-90ac-4aafebe6a46c"
+        },
+        {
+          "endpoint": "GET /api/v3/price-list",
+          "label": "List Price Lists",
+          "items": [
+            "New endpoint in the Price List section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#27d78e8d-6652-4778-83e7-bd5cd10b5a0f"
+        },
+        {
+          "endpoint": "GET /api/v3/user/:userUUID/rate",
+          "label": "List User Rates",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#d800b78b-2595-46d1-a981-e381c51196c5"
+        },
+        {
+          "endpoint": "GET /api/v3/workflow",
+          "label": "List Workflows",
+          "items": [
+            "New endpoint in the Workflows section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#6b4cab29-3d76-4fcb-ba19-5ccf81b1d3ed"
+        },
+        {
+          "endpoint": "POST /api/v3/project/:projectUUID/download",
+          "label": "Download Project Translations Async",
+          "items": [
+            "New field in the 200 response: downloadUrl"
+          ],
+          "docs_url": "https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce"
+        },
+        {
+          "endpoint": "POST /api/v3/user/:userUUID/rate",
+          "label": "Create User Rate",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#93d090c1-e72b-4356-a117-154918a98db5"
+        },
+        {
+          "endpoint": "PUT /api/v3/user/:userUUID/rate/:userRateUUID",
+          "label": "Update User Rate",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#762c315c-b7b1-4cae-9d54-2268f7e6201d"
+        },
+        {
+          "endpoint": "PUT /api/v3/user/:userUUID/rate/:userRateUUID/default",
+          "label": "Set Default User Rate",
+          "items": [
+            "New endpoint in the Users / Rates section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#6220c652-0cc3-43b5-9a74-df2f4c1caf78"
+        }
       ]
     },
     {
@@ -42,23 +139,16 @@
       "impact": "docs",
       "auto": true,
       "title": "Documentation updates",
-      "summary": "GET /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; POST /api/v3/user/:userUUID/rate: description text changed; POST /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: description text changed; PUT /api/v3/user/:userUUID/rate/:userRateUUID: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: renamed: Create User Rate Copy to Update User Rate.",
-      "endpoints": [
-        "GET /api/v3/user/:userUUID/rate",
-        "POST /api/v3/user/:userUUID/rate",
-        "PUT /api/v3/user/:userUUID/rate/:userRateUUID"
-      ]
-    },
-    {
-      "date": "2026-08-17",
-      "impact": "additive",
-      "auto": true,
-      "title": "New endpoints and fields",
-      "summary": "GET /api/v3/user/:userUUID/rate: new endpoint in Users; POST /api/v3/user/:userUUID/rate: new endpoint in Users; PUT /api/v3/user/:userUUID/rate/:userRateUUID: new endpoint in Users.",
-      "endpoints": [
-        "GET /api/v3/user/:userUUID/rate",
-        "POST /api/v3/user/:userUUID/rate",
-        "PUT /api/v3/user/:userUUID/rate/:userRateUUID"
+      "summary": "1 endpoint changed.",
+      "changes": [
+        {
+          "endpoint": "POST /api/v3/project/:projectUUID/download",
+          "label": "Download Project Translations Async",
+          "items": [
+            "Description text updated"
+          ],
+          "docs_url": "https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce"
+        }
       ]
     },
     {

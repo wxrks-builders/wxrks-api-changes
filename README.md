@@ -5,10 +5,11 @@ The published change tracker for the [wxrks API](https://dev.wxrks.com/), live a
 
 ## It updates itself
 
-A GitHub Action runs once a day, at **08:40 São Paulo time** (11:40 UTC). It fetches the published
-API documentation, compares it against the last recorded surface, and when something has moved it
-writes change log entries, rebuilds `index.html`, and commits. GitHub Pages redeploys on that commit,
-so the site follows the docs with no one touching it.
+A GitHub Action runs once a day, at **07:40 UTC** — 08:40 Dublin time in summer, 07:40 in winter
+(GitHub cron has no timezone). It fetches the published API documentation, compares it against the
+last recorded surface, and when something has moved it writes change log entries, rebuilds
+`index.html`, and commits. The published site follows that commit, so it tracks the docs with no one
+touching it.
 
 Daily, not hourly: the change log is dated by day. Several runs in one day split that day's movement
 across duplicate entries and write extra snapshots, so one run a day is what keeps the history
@@ -20,12 +21,27 @@ readable — one entry set per date, one snapshot per date.
 ## What it will and won't write
 
 Entries created by the Action state only what the diff found: an endpoint that disappeared, a
-parameter that appeared, a response field that changed. They are flagged `auto` and the page says
-they were detected automatically.
+parameter that appeared, a response field that changed. Facts are grouped by endpoint — the route
+once, then what happened to it — and every route links to its own section in the documentation.
+Entries are flagged `auto` and the page marks them as detected automatically.
 
 They deliberately carry **no guidance about what to do**. Nothing in this pipeline can know whether
 a new field is required or how a change affects a particular integration, and publishing a guess to
 customers is worse than publishing nothing. That judgement stays with a person.
+
+## What counts as "Action needed"
+
+Everything here is read off a published Postman collection: request examples, response examples, and
+Postman's `optional` flag. Those are hand-maintained documentation, not the API's contract, so an
+edited example is evidence something *may* have changed — not proof that a working call now fails.
+
+**Action needed** is therefore reserved for changes the diff can settle on its own: the endpoint is
+gone, authentication changed, the URL's path variables changed, or the request body switched between
+two real formats. Anything resting on an example body or the `optional` flag is **Worth checking**
+instead, and the reader decides. The rationale is in `CLASSIFICATION` in `apitrack.py`.
+
+The failure this guards against is a false "Action needed". A developer who opens their integration
+three times for nothing stops trusting the page, and then a real breaking change goes unread.
 
 To replace an auto entry with reviewed wording, edit `data/api-changelog.json`: rewrite `title` and
 `summary`, add an `action`, and drop the `"auto": true` flag. The provenance note disappears and the
@@ -41,7 +57,7 @@ python3 tools/api-tracker/apitrack.py build --out .
 |---|---|
 | `index.html` | The published page. Generated. Self-contained: fonts inlined, no external requests. |
 | `data/api-changelog.json` | The entries the page renders. This is the file to edit. |
-| `data/api-snapshots/` | Recorded API surfaces. A new one is stored only when something moved, so each date means a real change. |
+| `data/api-snapshots/` | Recorded API surfaces, one file per date. A snapshot is written only when something moved, so each date means a real change. |
 | `tools/api-tracker/` | The tracker: fetch, diff, classify, render. |
 | `.github/workflows/track.yml` | The daily schedule. |
 

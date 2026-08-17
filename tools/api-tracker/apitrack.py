@@ -9,9 +9,10 @@ and diffed instead of eyeballed.
     diff       compare two snapshots, classify every change
     build      render the client-facing changelog page from data/api-changelog.json
 
-Classification is deliberately conservative: anything that could break a client
-integration is `breaking`, anything ambiguous is `review`, and only pure text edits
-are `docs`. A human confirms the call before the page is published.
+Classification answers one question — does the reader have to change their code? —
+and the bar for saying yes is high, because the page is read by developers deciding
+whether to open their integration. See CLASSIFICATION below for where each line is
+drawn and why. A human confirms the call before the page is published.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import sys
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timezone
+from itertools import groupby
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -43,6 +45,13 @@ COLLECTION_URL = (
     f"https://dev.wxrks.com/api/collections/{OWNER_ID}/{PUBLISHED_ID}"
     "?segregateAuth=true&versionTag=latest"
 )
+
+# The docs render each request as a <section> whose id is the request's own uuid, so
+# `DOCS_URL#<id>` deep-links straight to that endpoint. Verified against the live page:
+# the anchor resolves and scrolls to the right section. The ids come from the same
+# collection JSON we snapshot, which is why a link is only offered for an endpoint that
+# is still in the current surface.
+DOCS_URL = "https://dev.wxrks.com/"
 
 SEVERITIES = ("breaking", "review", "additive", "docs")
 
@@ -189,6 +198,11 @@ def normalise(collection: dict) -> dict:
                 "body": body_shape(req.get("body")),
                 "responses": responses,
                 "desc": digest(strip_html(req.get("description"))),
+                # Carried out to `doc_ids` below, never left in the record: the
+                # "did anything move" check compares whole endpoint dicts, and a
+                # field the diff does not inspect would make every old snapshot
+                # look changed.
+                "_doc_id": item.get("id") or item.get("_postman_id") or "",
             }
             records.append((route, record))
 
@@ -202,10 +216,14 @@ def normalise(collection: dict) -> dict:
     for route, _ in records:
         seen[route] = seen.get(route, 0) + 1
     endpoints: dict[str, dict] = {}
+    doc_ids: dict[str, str] = {}
     for route, record in records:
         key = route if seen[route] == 1 else f"{route} [{record['name']}]"
         while key in endpoints:  # same route and same name: keep both
             key += "*"
+        doc_id = record.pop("_doc_id", "")
+        if doc_id:
+            doc_ids[key] = doc_id
         endpoints[key] = record
 
     info = collection.get("info") or {}
@@ -221,6 +239,9 @@ def normalise(collection: dict) -> dict:
         "endpoint_count": len(endpoints),
         "duplicate_routes": sorted(r for r, n in seen.items() if n > 1),
         "endpoints": endpoints,
+        # Kept beside `endpoints`, not inside it, so the change detection in cmd_auto
+        # keeps comparing like with like against snapshots recorded before this existed.
+        "doc_ids": doc_ids,
     }
 
 
@@ -263,6 +284,37 @@ def cmd_snapshot(args) -> int:
 # diff
 # --------------------------------------------------------------------------
 
+CLASSIFICATION = """Where the severity lines are drawn.
+
+Everything here is inferred from a published Postman collection: request examples,
+response examples, and Postman's own `optional` flag on parameters. Those are
+hand-maintained documentation artefacts, not the API's contract. An example body
+edited by whoever wrote the docs is evidence that something *may* have changed, not
+proof that a call which worked yesterday fails today.
+
+So `breaking` — the page calls it "Action needed" — is reserved for changes where the
+diff itself establishes that a previously-correct call is now wrong:
+
+    the endpoint is gone from the documentation
+    the authentication type changed
+    a path variable was added or removed, so the URL is different
+    the request body switched between two concrete formats (raw <-> formdata)
+
+`review` ("Worth checking") is for changes that plausibly require action but where
+the evidence cannot settle it — anything resting on an example body or on the
+`optional` flag. The reader is told what moved and decides for themselves.
+
+`additive` is for what can only add: a new endpoint, a new optional parameter, an
+extra field in a response. `docs` is for how the documentation presents itself:
+wording, section, name, which examples it shows.
+
+The failure mode this guards against is a false "Action needed". A developer who
+opens their integration three times for nothing stops trusting the page, and then a
+real breaking change goes unread. Under-calling a change costs one reader one
+comparison; over-calling it costs the page its credibility.
+"""
+
+
 def _change(severity: str, kind: str, endpoint: str, detail: str, label: str = "") -> dict:
     return {
         "severity": severity,
@@ -299,9 +351,11 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
             changes.append(_change("breaking", "path_var", key, label=label,
                                    detail=f"path variable {verb}: {', '.join(group)}"))
 
+    # Query parameters come from the URL example and Postman's `optional` flag, which
+    # is set by hand and often not set at all. None of it establishes a break.
     old_q, new_q = old["query"], new["query"]
     for name in sorted(set(old_q) - set(new_q)):
-        changes.append(_change("breaking", "query", key, label=label,
+        changes.append(_change("review", "query", key, label=label,
                                detail=f"query param removed: {name}"))
     for name in sorted(set(new_q) - set(old_q)):
         if new_q[name]["optional"]:
@@ -313,7 +367,7 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
                                           "— confirm whether it is required"))
     for name in sorted(set(old_q) & set(new_q)):
         if old_q[name]["optional"] and not new_q[name]["optional"]:
-            changes.append(_change("breaking", "query", key, label=label,
+            changes.append(_change("review", "query", key, label=label,
                                    detail=f"query param {name} is no longer optional"))
         elif not old_q[name]["optional"] and new_q[name]["optional"]:
             changes.append(_change("additive", "query", key, label=label,
@@ -323,13 +377,19 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
     approx = ob.get("approximate") or nb.get("approximate")
     suffix = " (example body could not be parsed — verify by hand)" if approx else ""
     if ob["mode"] != nb["mode"]:
-        changes.append(_change("breaking", "body", key, label=label,
+        # A mode of None means no request body was documented at all. Gaining or losing
+        # the example is a documentation event; switching between two real formats is
+        # the one body change that does break a working call.
+        concrete = ob["mode"] and nb["mode"]
+        changes.append(_change("breaking" if concrete else "review", "body", key, label=label,
                                detail=f"request body format changed: {ob['mode']} -> {nb['mode']}"))
     else:
         gone = sorted(set(ob["fields"]) - set(nb["fields"]))
         new_fields = sorted(set(nb["fields"]) - set(ob["fields"]))
         if gone:
-            changes.append(_change("breaking", "body", key, label=label,
+            # Fields read off the example body, so a docs edit looks identical to a
+            # real removal. The reader compares against their own payload.
+            changes.append(_change("review", "body", key, label=label,
                                    detail=f"request field removed: {', '.join(gone)}{suffix}"))
         if new_fields:
             changes.append(_change("review", "body", key, label=label,
@@ -338,7 +398,8 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
 
     old_r, new_r = old["responses"], new["responses"]
     for code in sorted(set(old_r) - set(new_r)):
-        changes.append(_change("review", "response", key, label=label,
+        # Which examples the docs choose to show is presentation, not behaviour.
+        changes.append(_change("docs", "response", key, label=label,
                                detail=f"documented response {code} no longer shown"))
     for code in sorted(set(new_r) - set(old_r)):
         changes.append(_change("additive", "response", key, label=label,
@@ -347,7 +408,9 @@ def diff_endpoint(key: str, old: dict, new: dict) -> list[dict]:
         gone = sorted(set(old_r[code]["fields"]) - set(new_r[code]["fields"]))
         added = sorted(set(new_r[code]["fields"]) - set(old_r[code]["fields"]))
         if gone:
-            changes.append(_change("breaking", "response", key, label=label,
+            # Worth checking rather than action needed: a field vanishing from a
+            # response example matters only to a reader who actually reads that field.
+            changes.append(_change("review", "response", key, label=label,
                                    detail=f"{code} response field removed: {', '.join(gone)}"))
         if added:
             changes.append(_change("additive", "response", key, label=label,
@@ -371,14 +434,15 @@ def diff_snapshots(old: dict, new: dict) -> dict:
 
     # A duplicated route's key carries its request name, so renaming one entry of
     # a pair re-keys it. Check the route itself before calling anything removed —
-    # a live route reads as a rename to review, not as a breaking removal.
+    # the route is still there, so nothing the reader calls has moved. That makes it
+    # a documentation reshuffle, not a change to act on.
     old_routes = {r["route"] for r in oe.values()}
     new_routes = {r["route"] for r in ne.values()}
 
     for key in sorted(set(oe) - set(ne)):
         if oe[key]["route"] in new_routes:
             changes.append(_change(
-                "review", "entry_rekeyed", key, label=oe[key]["name"],
+                "docs", "entry_rekeyed", key, label=oe[key]["name"],
                 detail=f"this entry is gone but {oe[key]['route']} is still documented "
                        "— likely renamed or merged, confirm the route still behaves the same"))
         else:
@@ -387,8 +451,10 @@ def diff_snapshots(old: dict, new: dict) -> dict:
                                    detail="endpoint no longer in the documentation"))
     for key in sorted(set(ne) - set(oe)):
         if ne[key]["route"] in old_routes:
+            # The route was already documented; the docs now describe it twice, or
+            # under a new name. Nothing the reader calls has changed.
             changes.append(_change(
-                "review", "entry_rekeyed", key, label=ne[key]["name"],
+                "docs", "entry_rekeyed", key, label=ne[key]["name"],
                 detail=f"new documentation entry for the existing route {ne[key]['route']}"))
         else:
             changes.append(_change("additive", "endpoint_added", key,
@@ -500,9 +566,11 @@ def cmd_check(args) -> int:
         return 0
 
     result = diff_snapshots(old, new)
+    # Exactly one snapshot per date, overwritten if the docs move again the same day.
+    # A suffixed second file (`-b`) sorted *before* the plain one, so latest_snapshot()
+    # went on returning the earlier surface and every later run re-reported the same
+    # changes. One file per day removes that by construction.
     out = state / f"{today.isoformat()}.json"
-    if out == previous:  # already moved once today; keep one snapshot per day
-        out = state / f"{today.isoformat()}-b.json"
     out.write_text(json.dumps(new, indent=2, sort_keys=True) + "\n")
 
     counts = result["counts"]
@@ -598,19 +666,71 @@ IMPACT_COPY = {
 }
 
 
+def endpoint_parts(endpoint: str) -> tuple[str, str]:
+    """Split "POST /api/v3/thing" into verb and path so paths line up in a column.
+
+    A route documented twice carries its request name in the key (`... [Create Rate]`).
+    That name is shown in its own right beside the path, so the suffix is dropped here
+    rather than printed twice.
+    """
+    key = re.sub(r"\s*\[[^\]]*\]\**$", "", endpoint)
+    verb, _, path = key.partition(" ")
+    return (verb, path) if path else ("", key)
+
+
+def render_changes(changes: list[dict], more: int = 0) -> list[str]:
+    """One block per endpoint: the route stated once, then its facts one per line.
+
+    The alternative — every fact joined into a paragraph, with the routes repeated
+    underneath as chips — makes the reader parse a run-on sentence to find out
+    whether their own endpoint is in it. Structure does that work instead.
+    """
+    parts = ['  <ul class="changes">']
+    for block in changes:
+        verb, path = endpoint_parts(block.get("endpoint", ""))
+        docs = block.get("docs_url")
+        parts.append("    <li>")
+        parts.append('      <p class="route">')
+        # The verb and path together are the link, so the click target is the whole
+        # route rather than a separate "docs" link the reader has to hunt for.
+        if docs:
+            parts.append(f'        <a href="{esc(docs)}" target="_blank" rel="noopener">'
+                         f'<span class="verb">{esc(verb)}</span>'
+                         f'<code>{esc(path)}</code></a>')
+        else:
+            parts.append(f'        <span class="verb">{esc(verb)}</span>'
+                         f'<code>{esc(path)}</code>')
+        if block.get("label"):
+            parts.append(f'        <span class="route-name">{esc(block["label"])}</span>')
+        parts.append("      </p>")
+        parts.append('      <ul class="facts">')
+        for item in block.get("items") or []:
+            parts.append(f"        <li>{esc(item)}</li>")
+        parts.append("      </ul>")
+        parts.append("    </li>")
+    parts.append("  </ul>")
+    if more:
+        parts.append(f'  <p class="more">And {more} more '
+                     f'endpoint{"" if more == 1 else "s"} in this group.</p>')
+    return parts
+
+
 def render_entry(entry: dict) -> str:
     impact = entry.get("impact", "additive")
     heading, default_note = IMPACT_COPY.get(impact, IMPACT_COPY["additive"])
+    # The date lives on the day heading that wraps the card, not on the card itself.
     parts = [
         f'<article class="card entry" data-impact="{esc(impact)}">',
         '  <header class="entry-head">',
-        f'    <time datetime="{esc(entry["date"])}">{esc(entry["date"])}</time>',
         f'    <span class="tag tag-{esc(impact)}">{esc(heading)}</span>',
         "  </header>",
-        f'  <h3>{esc(entry["title"])}</h3>',
+        f'  <h4>{esc(entry["title"])}</h4>',
     ]
     if entry.get("summary"):
         parts.append(f'  <p class="summary">{esc(entry["summary"])}</p>')
+
+    if entry.get("changes"):
+        parts += render_changes(entry["changes"], entry.get("more", 0))
 
     for ep in entry.get("endpoints") or []:
         parts.append(f'  <p class="endpoint"><code>{esc(ep)}</code></p>')
@@ -634,6 +754,32 @@ def render_entry(entry: dict) -> str:
                      f'target="_blank" rel="noopener">Read the endpoint docs</a></p>')
     parts.append("</article>")
     return "\n".join(parts)
+
+
+def pretty_date(iso: str) -> str:
+    """2026-08-17 -> 17 August 2026, matching how `last_checked` reads."""
+    try:
+        day = date.fromisoformat(iso)
+    except ValueError:
+        return iso
+    return f"{day.day} {day:%B %Y}"
+
+
+def render_feed(entries: list[dict]) -> str:
+    """Group the cards by date under one heading per day.
+
+    Several entries share a date whenever a check finds changes at more than one
+    severity — four cards each repeating "2026-08-17" reads as four separate events
+    instead of one day's worth of movement.
+    """
+    out: list[str] = []
+    for day, group in groupby(entries, key=lambda e: e["date"]):
+        out.append(f'<section class="day" data-date="{esc(day)}">')
+        out.append(f'  <h3 class="day-head"><time datetime="{esc(day)}">'
+                   f'{esc(pretty_date(day))}</time></h3>')
+        out.extend(render_entry(e) for e in group)
+        out.append("</section>")
+    return "\n".join(out)
 
 
 SOCIAL_DESCRIPTION = (
@@ -680,9 +826,7 @@ def build_page(data: dict) -> str:
     fonts = (here / "inter-fonts.css").read_text()
 
     counts = {s: sum(1 for e in entries if e.get("impact") == s) for s in SEVERITIES}
-    body = "\n".join(render_entry(e) for e in entries) or (
-        '<p class="empty">No API changes recorded yet.</p>'
-    )
+    body = render_feed(entries) or '<p class="empty">No API changes recorded yet.</p>'
     return (
         template
         .replace("/*FONTS*/", fonts)
@@ -728,10 +872,10 @@ def cmd_build(args) -> int:
     return 0
 
 
-AUTO_NOTE = (
-    "Detected automatically from the published API documentation. If this affects you and "
-    "the detail above isn't enough, tell us and we'll add it."
-)
+# Short by design. Repeating the full explanation on every card crowded the facts out;
+# it now sits once in the "Where this comes from" panel. What must never be lost is the
+# marker itself — an auto entry has to be visibly distinct from reviewed guidance.
+AUTO_NOTE = "Detected automatically"
 
 # What the diff can honestly say per severity, with no human judgement added.
 AUTO_TITLES = {
@@ -742,49 +886,143 @@ AUTO_TITLES = {
 }
 
 
-def public_detail(detail: str) -> str:
-    """Strip the internal half of a diff detail so it can face customers.
+def _plural(items: str, one: str, many: str) -> str:
+    """Diff details carry comma-joined names; a comma means more than one."""
+    return many if "," in items else one
 
-    Diff details carry notes written for whoever triages them ("confirm whether it is
+
+# Diff details are phrased for whoever triages them — terse, lowercase, arrow-notated.
+# On the page each has to read as a plain statement of fact. One rule per detail shape,
+# and nothing is added that the diff did not establish. An unrecognised shape falls
+# through to the fallback in `human_detail` and is published as written rather than
+# dropped or guessed at.
+HUMAN_RULES: list[tuple[str, object]] = [
+    (r"auth changed: (.+) -> (.+)", r"Authentication changed from \1 to \2"),
+    (r"header no longer documented: (.+)",
+     lambda m: f"{_plural(m[1], 'Header', 'Headers')} no longer documented: {m[1]}"),
+    (r"new header expected: (.+)",
+     lambda m: f"{_plural(m[1], 'New header', 'New headers')} expected: {m[1]}"),
+    (r"path variable removed: (.+)",
+     lambda m: f"{_plural(m[1], 'Path variable', 'Path variables')} removed: {m[1]}"),
+    (r"path variable added: (.+)",
+     lambda m: f"{_plural(m[1], 'New path variable', 'New path variables')}: {m[1]}"),
+    (r"query param removed: (.+)", r"Query parameter removed: \1"),
+    (r"new optional query param: (.+)", r"New optional query parameter: \1"),
+    (r"new query param not marked optional: (.+)",
+     r"New query parameter, not marked optional: \1"),
+    (r"query param (.+) is no longer optional",
+     r"Query parameter \1 is no longer marked optional"),
+    (r"query param (.+) is now optional", r"Query parameter \1 is now optional"),
+    # `mode` is None when no request body is documented at all. "changed from None to
+    # raw" is Python leaking into customer copy; say what it means instead.
+    (r"request body format changed: None -> (.+)",
+     r"A request body is now documented (\1); there was none before"),
+    (r"request body format changed: (.+) -> None",
+     r"The documented request body (\1) is gone"),
+    (r"request body format changed: (.+) -> (.+)",
+     r"Request body format changed from \1 to \2"),
+    (r"request field removed: (.+)",
+     lambda m: f"{_plural(m[1], 'Request field removed', 'Request fields removed')}: {m[1]}"),
+    (r"new request field: (.+)",
+     lambda m: f"{_plural(m[1], 'New request field', 'New request fields')}: {m[1]}"),
+    (r"documented response (.+) no longer shown", r"Response \1 is no longer documented"),
+    (r"new documented response: (.+)", r"New documented response: \1"),
+    # No em dash in generated text: `human_detail` treats " — " as the start of the
+    # internal half and cuts there, so its own output has to stay clear of it.
+    (r"(.+) response field removed: (.+)",
+     lambda m: f"{_plural(m[2], 'Field', 'Fields')} removed from the "
+               f"{m[1]} response: {m[2]}"),
+    (r"(.+) response field added: (.+)",
+     lambda m: f"{_plural(m[2], 'New field', 'New fields')} in the "
+               f"{m[1]} response: {m[2]}"),
+    (r"description text changed", "Description text updated"),
+    (r"moved section: (.*) -> (.+)",
+     lambda m: f"Moved to the {m[2]} section"
+               + (f" (was {m[1].strip()})" if m[1].strip() else "")),
+    (r"renamed: (.+) -> (.+)", "Renamed to “\\2” (was “\\1”)"),
+    (r"new endpoint in the API", "New endpoint"),
+    (r"new endpoint in (.+)", r"New endpoint in the \1 section"),
+    (r"endpoint no longer in the documentation", "No longer in the documentation"),
+    (r"new documentation entry for the existing route (.+)",
+     r"Second documentation entry for the existing route \1"),
+]
+
+
+def human_detail(detail: str) -> str:
+    """Rewrite one diff detail as a sentence a customer can read on the page.
+
+    Details also carry notes written for whoever triages them ("confirm whether it is
     required", "verify by hand"). Those must not reach a public page: they read as
-    instructions to the reader and expose our own uncertainty as if it were theirs.
-    Everything after an em dash is that internal half.
+    instructions to the reader and expose our uncertainty as if it were theirs.
+    Everything after an em dash is that internal half, and it is cut first.
     """
-    detail = detail.replace(" (example body could not be parsed — verify by hand)", "")
-    detail = detail.split(" — ", 1)[0]
-    return detail.replace(" -> ", " to ").strip()
+    text = detail.replace(" (example body could not be parsed — verify by hand)", "")
+    text = text.split(" — ", 1)[0].strip()
+    for pattern, repl in HUMAN_RULES:
+        match = re.fullmatch(pattern, text)
+        if match:
+            return match.expand(repl) if isinstance(repl, str) else repl(match)
+    return text[:1].upper() + text[1:]
 
 
-def auto_entries(result: dict, day: date) -> list[dict]:
+def auto_entries(result: dict, day: date, doc_ids: dict | None = None) -> list[dict]:
     """Turn a diff into change log entries stating only what the diff found.
 
-    One entry per severity present, listing the mechanical facts. No invented
-    guidance: `action` stays empty and the entry is flagged `auto` so the page says
-    where it came from and Giovanna can replace it with curated prose later.
+    One entry per severity present. Inside it, the facts are grouped by endpoint so
+    the page can state each route once and list what happened to it — see
+    `render_changes`. No invented guidance: `action` stays empty and the entry is
+    flagged `auto` so the page says where it came from and Giovanna can replace it
+    with curated prose later.
     """
     by_severity: dict[str, list[dict]] = {}
     for change in result["changes"]:
         by_severity.setdefault(change["severity"], []).append(change)
 
-    limit = 8
+    # High on purpose. A reader is here to find out whether *their* endpoint moved, so
+    # hiding one behind "and N more" defeats the page. This is an overflow guard against
+    # a day when the whole collection is republished, not a display preference.
+    limit = 60
     entries = []
     for severity in SEVERITIES:
         group = by_severity.get(severity)
         if not group:
             continue
-        shown = [f"{c['endpoint']}: {public_detail(c['detail'])}" for c in group[:limit]]
-        summary = "; ".join(shown) + "."
-        if len(group) > limit:
-            summary += f" And {len(group) - limit} more."
-        endpoints = sorted({c["endpoint"] for c in group})
-        entries.append({
+
+        by_endpoint: dict[str, dict] = {}
+        for change in group:
+            if change["endpoint"] not in by_endpoint:
+                block = {
+                    "endpoint": change["endpoint"],
+                    "label": change.get("label") or "",
+                    "items": [],
+                }
+                # No id means the endpoint is not in the current surface — it was
+                # removed. Linking to a section that no longer renders is worse
+                # than not linking.
+                doc_id = (doc_ids or {}).get(change["endpoint"])
+                if doc_id:
+                    block["docs_url"] = f"{DOCS_URL}#{doc_id}"
+                by_endpoint[change["endpoint"]] = block
+            block = by_endpoint[change["endpoint"]]
+            fact = human_detail(change["detail"])
+            if fact not in block["items"]:
+                block["items"].append(fact)
+
+        blocks = [by_endpoint[key] for key in sorted(by_endpoint)]
+        entry = {
             "date": day.isoformat(),
             "impact": severity,
             "auto": True,
             "title": AUTO_TITLES[severity],
-            "summary": summary,
-            "endpoints": endpoints[:12],
-        })
+            # Scale only. What the severity *means* is the tag and the legend's job;
+            # a machine-written entry must not read as advice about this change.
+            "summary": ("1 endpoint changed." if len(blocks) == 1
+                        else f"{len(blocks)} endpoints changed."),
+            "changes": blocks[:limit],
+        }
+        if len(blocks) > limit:
+            entry["more"] = len(blocks) - limit
+        entries.append(entry)
     return entries
 
 
@@ -814,13 +1052,37 @@ def cmd_auto(args) -> int:
         return 0
 
     result = diff_snapshots(old, new)
+    # One snapshot per date — see the note in cmd_check. A same-day rerun overwrites
+    # it and its findings are folded into the day's existing cards below.
     out = SNAPSHOT_DIR / f"{today.isoformat()}.json"
-    if out == previous:
-        out = SNAPSHOT_DIR / f"{today.isoformat()}-b.json"
     out.write_text(json.dumps(new, indent=2, sort_keys=True) + "\n")
 
-    added = auto_entries(result, today)
-    data["entries"] = added + (data.get("entries") or [])
+    added = auto_entries(result, today, new.get("doc_ids"))
+
+    # A second run on the same day (a manual dispatch, or a schedule change) would
+    # otherwise prepend a second card with the same date and severity, and the page
+    # would show one day's movement twice. Fold it into the card already there.
+    kept = list(data.get("entries") or [])
+    for entry in added:
+        twin = next((e for e in kept if e.get("date") == entry["date"]
+                     and e.get("impact") == entry["impact"] and e.get("auto")), None)
+        if twin is None:
+            continue
+        seen = {b["endpoint"] for b in twin.get("changes") or []}
+        merged = list(twin.get("changes") or [])
+        for block in entry["changes"]:
+            if block["endpoint"] in seen:
+                target = next(b for b in merged if b["endpoint"] == block["endpoint"])
+                target["items"] += [i for i in block["items"] if i not in target["items"]]
+            else:
+                merged.append(block)
+        twin["changes"] = merged
+        twin["summary"] = ("1 endpoint changed." if len(merged) == 1
+                           else f"{len(merged)} endpoints changed.")
+        entry["_merged"] = True
+
+    added = [e for e in added if not e.pop("_merged", False)]
+    data["entries"] = added + kept
     data["last_checked"] = f"{today.day} {today:%B %Y}"
     data["endpoint_count"] = new["endpoint_count"]
     CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")

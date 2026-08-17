@@ -16,10 +16,11 @@ name: Track API changes
 
 on:
   schedule:
-    # 11:40 UTC = 08:40 in São Paulo (UTC-3 all year; Brazil dropped DST in 2019),
-    # so the day's result is already there when Gi starts. Off the top of the hour
-    # because GitHub delays scheduled runs queued at :00.
-    - cron: "40 11 * * *"
+    # 07:40 UTC. GitHub cron has no timezone, so this lands at 08:40 in Dublin
+    # through the summer and 07:40 once the clocks go back — early either way, so the
+    # day's result is waiting rather than arriving mid-morning. Off the top of the
+    # hour because GitHub delays runs queued at :00.
+    - cron: "40 7 * * *"
   workflow_dispatch:
 
 permissions:

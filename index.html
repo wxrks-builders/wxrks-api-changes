@@ -287,7 +287,20 @@
   .section-head .aside { font-size: .875rem; color: var(--ink-mute); }
 
   /* ---- entry cards ------------------------------------------------- */
-  .feed { display: flex; flex-direction: column; gap: 1rem; }
+  /* The feed separates days; cards inside a day sit closer together, so one day's
+     worth of movement reads as one block however many severities it spans. */
+  .feed { display: flex; flex-direction: column; gap: 2rem; }
+  .day { display: flex; flex-direction: column; gap: .625rem; }
+  .day[hidden] { display: none; }
+  .day-head {
+    margin: 0;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -317,7 +330,7 @@
   .tag-additive { background: var(--additive-bg); color: var(--additive); }
   .tag-docs     { background: var(--docs-bg);     color: var(--docs); }
 
-  .entry h3 {
+  .entry h4 {
     margin: 0;
     font-size: 1.0625rem;
     font-weight: 600;
@@ -327,6 +340,74 @@
     text-wrap: balance;
   }
   .entry .summary { margin: 0; color: var(--ink-soft); max-width: 68ch; }
+
+  /* ---- per-endpoint change list ------------------------------------- */
+  /* One block per endpoint: route on top, what happened to it underneath. The
+     facts indent to the path's column so the verbs form a scannable gutter. */
+  .changes {
+    margin: .125rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+  .changes > li { border-left: 2px solid var(--line); padding-left: .875rem; }
+  .route {
+    margin: 0 0 .15rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .5rem;
+  }
+  /* The route is the link. It has to look clickable without turning twenty purple
+     lines into the loudest thing on the page: a quiet underline, accent on hover. */
+  .route a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .5rem;
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .route a:hover { text-decoration-color: var(--link); }
+  .route a:hover code, .route a:hover .verb { color: var(--link); }
+  .route a::after {
+    content: "↗";
+    font-size: .6875rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+  }
+  .route a:hover::after { color: var(--link); }
+  .verb {
+    font-family: var(--mono);
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: var(--ink-mute);
+    min-width: 3.25rem;
+    flex: none;
+  }
+  .route code {
+    font-family: var(--mono);
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: break-all;
+  }
+  .route-name { font-size: .8125rem; color: var(--ink-mute); }
+  .facts {
+    margin: 0;
+    padding: 0 0 0 3.75rem;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+  }
+  .facts li { font-size: .9375rem; color: var(--ink-soft); }
+  .entry .more { margin: 0; font-size: .875rem; color: var(--ink-mute); }
+
   .entry .endpoint { margin: 0; overflow-x: auto; }
   .entry .endpoint code {
     font-family: var(--mono);
@@ -364,13 +445,46 @@
     margin: 0;
     font-size: .875rem;
     color: var(--ink-mute);
-    border-left: 2px solid var(--line-strong);
+    border-left: 2px solid var(--line);
     padding-left: .7rem;
   }
   .entry .effective strong { color: var(--ink); font-weight: 600; }
   .no-match { color: var(--ink-mute); margin: 0; display: none; }
   .feed[data-empty="true"] .no-match { display: block; }
   .empty { color: var(--ink-mute); margin: 0; }
+
+  /* ---- pager ------------------------------------------------------- */
+  .pager { margin-top: 1.75rem; display: flex; flex-direction: column; gap: .625rem; }
+  .pager[hidden] { display: none; }
+  .pager-status {
+    margin: 0;
+    font-size: .875rem;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .pager-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
+  .pager-buttons button {
+    appearance: none;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .3rem .625rem;
+    min-width: 2.25rem;
+    cursor: pointer;
+    transition: color .12s ease, border-color .12s ease;
+  }
+  .pager-buttons button:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-mute); }
+  .pager-buttons button:disabled { opacity: .45; cursor: default; }
+  .pager-buttons button[aria-current="page"] {
+    color: var(--ground);
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  .pager-gap { color: var(--ink-mute); font-size: .875rem; padding: 0 .125rem; }
 
   /* ---- reference card grid ----------------------------------------- */
   .panel { margin-top: 3rem; }
@@ -412,6 +526,8 @@
     .hero .shell { min-height: 220px; padding-bottom: 4rem; }
     .hero h1 { font-size: 1.625rem; }
     .wave { height: 55px; }
+    /* No room for a verb gutter on a phone: let the facts run full width. */
+    .facts { padding-left: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
@@ -458,107 +574,225 @@
     <div class="column">
       <div class="section-head">
         <h2>Changes</h2>
-        <span class="status-pill" id="status" data-breaking="1">
+        <span class="status-pill" id="status" data-breaking="0">
           <svg class="icon-ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3.1 4.9-3.9 3.9a.75.75 0 0 1-1.06 0L4.9 8.96a.75.75 0 1 1 1.06-1.06l.71.7 3.37-3.36a.75.75 0 0 1 1.06 1.06Z"/></svg>
           <svg class="icon-alert" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 3a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5.25A.75.75 0 0 1 8 4.5Zm0 6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z"/></svg>
           <span id="verdict">No updates need action</span>
         </span>
         <span class="spacer"></span>
-        <span class="aside">154 endpoints tracked · checked 17 August 2026</span>
+        <span class="aside">160 endpoints tracked · checked 17 August 2026</span>
       </div>
 
       <div class="feed" id="feed">
-        <article class="card entry" data-impact="breaking">
-  <header class="entry-head">
-    <time datetime="2026-08-17">2026-08-17</time>
-    <span class="tag tag-breaking">Action needed</span>
-  </header>
-  <h3>Changes to endpoints you may already be calling</h3>
-  <p class="summary">POST /api/v3/user/:userUUID/rate: request field removed: userUuid, uuid.</p>
-  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
-  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
-</article>
+        <section class="day" data-date="2026-08-17">
+  <h3 class="day-head"><time datetime="2026-08-17">17 August 2026</time></h3>
 <article class="card entry" data-impact="review">
   <header class="entry-head">
-    <time datetime="2026-08-17">2026-08-17</time>
     <span class="tag tag-review">Worth checking</span>
   </header>
-  <h3>Changes worth checking against your integration</h3>
-  <p class="summary">POST /api/v3/user/:userUUID/rate: new request field: rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate.</p>
-  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
-  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+  <h4>Changes worth checking against your integration</h4>
+  <p class="summary">1 endpoint changed.</p>
+  <ul class="changes">
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce" target="_blank" rel="noopener"><span class="verb">POST</span><code>/api/v3/project/:projectUUID/download</code></a>
+        <span class="route-name">Download Project Translations Async</span>
+      </p>
+      <ul class="facts">
+        <li>A request body is now documented (raw); there was none before</li>
+      </ul>
+    </li>
+  </ul>
+  <p class="detected">Detected automatically</p>
 </article>
 <article class="card entry" data-impact="additive">
   <header class="entry-head">
-    <time datetime="2026-08-17">2026-08-17</time>
     <span class="tag tag-additive">New capability</span>
   </header>
-  <h3>New endpoints and fields</h3>
-  <p class="summary">DELETE /api/v3/project/:ProjectUUID/work-unit/bulk: new endpoint in Projects; GET /api/v3/net-rate-settings/:netRateUuid: new endpoint in Net Rate; GET /api/v3/price-list: new endpoint in Price List; POST /api/v3/user/:userUUID/rate: 200 - Success response field added: orgUnitUuid, rateDetails[].dailyRate, rateDetails[].hourlyRate, rateDetails[].pagesRate, rateDetails[].userRateUuid, rateDetails[].uuid, userUuid, uuid.</p>
-  <p class="endpoint"><code>DELETE /api/v3/project/:ProjectUUID/work-unit/bulk</code></p>
-  <p class="endpoint"><code>GET /api/v3/net-rate-settings/:netRateUuid</code></p>
-  <p class="endpoint"><code>GET /api/v3/price-list</code></p>
-  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
-  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+  <h4>New endpoints and fields</h4>
+  <p class="summary">13 endpoints changed.</p>
+  <ul class="changes">
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#0b6cb072-0456-484c-b9f0-8a74130a2c49" target="_blank" rel="noopener"><span class="verb">DELETE</span><code>/api/v3/project/:ProjectUUID/work-unit/bulk</code></a>
+        <span class="route-name">Bulk Delete Work Units</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Projects section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#f76b2cc1-7946-4a07-8ee7-9eb28d5fcd28" target="_blank" rel="noopener"><span class="verb">DELETE</span><code>/api/v3/user/:userUUID/rate/:userRateUUID</code></a>
+        <span class="route-name">Delete User Rate</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#6358934a-4925-490c-b24b-27ade1c338ad" target="_blank" rel="noopener"><span class="verb">DELETE</span><code>/api/v3/user/:userUUID/rate/:userRateUUID/detail/:rateDetailUUID</code></a>
+        <span class="route-name">Delete User Rate Detail</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#9c502642-8f76-4156-817e-9cc9d279fccc" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/net-rate-settings/:netRateUuid</code></a>
+        <span class="route-name">Get Net Rate Settings</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Net Rate section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#f4db7f99-00f9-4d22-881f-2793bd1e854b" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/net-rate-settings/list-account</code></a>
+        <span class="route-name">List Account Net Rate Settings</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Net Rate section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#8e07e823-fdbb-4e50-90ac-4aafebe6a46c" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/net-rate-settings/list-org-unit-account/:orgUnitUUID</code></a>
+        <span class="route-name">List Org Unit Net Rate Settings</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Net Rate section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#27d78e8d-6652-4778-83e7-bd5cd10b5a0f" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/price-list</code></a>
+        <span class="route-name">List Price Lists</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Price List section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#d800b78b-2595-46d1-a981-e381c51196c5" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/user/:userUUID/rate</code></a>
+        <span class="route-name">List User Rates</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#6b4cab29-3d76-4fcb-ba19-5ccf81b1d3ed" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/workflow</code></a>
+        <span class="route-name">List Workflows</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Workflows section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce" target="_blank" rel="noopener"><span class="verb">POST</span><code>/api/v3/project/:projectUUID/download</code></a>
+        <span class="route-name">Download Project Translations Async</span>
+      </p>
+      <ul class="facts">
+        <li>New field in the 200 response: downloadUrl</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#93d090c1-e72b-4356-a117-154918a98db5" target="_blank" rel="noopener"><span class="verb">POST</span><code>/api/v3/user/:userUUID/rate</code></a>
+        <span class="route-name">Create User Rate</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#762c315c-b7b1-4cae-9d54-2268f7e6201d" target="_blank" rel="noopener"><span class="verb">PUT</span><code>/api/v3/user/:userUUID/rate/:userRateUUID</code></a>
+        <span class="route-name">Update User Rate</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#6220c652-0cc3-43b5-9a74-df2f4c1caf78" target="_blank" rel="noopener"><span class="verb">PUT</span><code>/api/v3/user/:userUUID/rate/:userRateUUID/default</code></a>
+        <span class="route-name">Set Default User Rate</span>
+      </p>
+      <ul class="facts">
+        <li>New endpoint in the Users / Rates section</li>
+      </ul>
+    </li>
+  </ul>
+  <p class="detected">Detected automatically</p>
 </article>
 <article class="card entry" data-impact="docs">
   <header class="entry-head">
-    <time datetime="2026-08-17">2026-08-17</time>
     <span class="tag tag-docs">Documentation</span>
   </header>
-  <h3>Documentation updates</h3>
-  <p class="summary">GET /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; POST /api/v3/user/:userUUID/rate: description text changed; POST /api/v3/user/:userUUID/rate: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: description text changed; PUT /api/v3/user/:userUUID/rate/:userRateUUID: moved section: Users to Users / Rates; PUT /api/v3/user/:userUUID/rate/:userRateUUID: renamed: Create User Rate Copy to Update User Rate.</p>
-  <p class="endpoint"><code>GET /api/v3/user/:userUUID/rate</code></p>
-  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
-  <p class="endpoint"><code>PUT /api/v3/user/:userUUID/rate/:userRateUUID</code></p>
-  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
+  <h4>Documentation updates</h4>
+  <p class="summary">1 endpoint changed.</p>
+  <ul class="changes">
+    <li>
+      <p class="route">
+        <a href="https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce" target="_blank" rel="noopener"><span class="verb">POST</span><code>/api/v3/project/:projectUUID/download</code></a>
+        <span class="route-name">Download Project Translations Async</span>
+      </p>
+      <ul class="facts">
+        <li>Description text updated</li>
+      </ul>
+    </li>
+  </ul>
+  <p class="detected">Detected automatically</p>
 </article>
-<article class="card entry" data-impact="additive">
-  <header class="entry-head">
-    <time datetime="2026-08-17">2026-08-17</time>
-    <span class="tag tag-additive">New capability</span>
-  </header>
-  <h3>New endpoints and fields</h3>
-  <p class="summary">GET /api/v3/user/:userUUID/rate: new endpoint in Users; POST /api/v3/user/:userUUID/rate: new endpoint in Users; PUT /api/v3/user/:userUUID/rate/:userRateUUID: new endpoint in Users.</p>
-  <p class="endpoint"><code>GET /api/v3/user/:userUUID/rate</code></p>
-  <p class="endpoint"><code>POST /api/v3/user/:userUUID/rate</code></p>
-  <p class="endpoint"><code>PUT /api/v3/user/:userUUID/rate/:userRateUUID</code></p>
-  <p class="detected">Detected automatically from the published API documentation. If this affects you and the detail above isn&#x27;t enough, tell us and we&#x27;ll add it.</p>
-</article>
+</section>
+<section class="day" data-date="2026-08-11">
+  <h3 class="day-head"><time datetime="2026-08-11">11 August 2026</time></h3>
 <article class="card entry" data-impact="docs">
   <header class="entry-head">
-    <time datetime="2026-08-11">2026-08-11</time>
     <span class="tag tag-docs">Documentation</span>
   </header>
-  <h3>Change tracking starts here</h3>
+  <h4>Change tracking starts here</h4>
   <p class="summary">We started tracking the wxrks API surface today, covering 148 documented endpoints across 19 sections along with their parameters, request bodies and response shapes. This entry is the baseline rather than a change. From here on, anything that moves in the API gets an entry on this page.</p>
   <p class="no-action">Wording and structure only. The API itself is unchanged.</p>
   <p class="docs-link"><a href="https://dev.wxrks.com/" target="_blank" rel="noopener">Read the endpoint docs</a></p>
 </article>
+</section>
         <p class="no-match">No changes in this category.</p>
       </div>
+
+      <nav class="pager" id="pager" aria-label="Change log pages" hidden></nav>
 
       <section class="panel">
         <div class="section-head"><h2>How to read this page</h2></div>
         <div class="grid">
           <div class="card">
             <h3><span class="tag tag-breaking">Action needed</span></h3>
-            <p>Your integration needs an update to stay on the current version: an endpoint or
-              field that moved, a parameter that became required, or a change to authentication.</p>
+            <p>A call that was correct before is wrong now, and we can say so with certainty: the
+              endpoint is gone, authentication changed, the URL's path variables changed, or the
+              request body switched format. Change your code for these.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-review">Worth checking</span></h3>
-            <p>An update that may or may not apply to you: a new field whose requirement isn't
-              settled, a header change, a reorganised endpoint. Worth a look at your integration.</p>
+            <p>Something moved that may or may not reach you — a parameter, a field in a request or
+              response example, a header. We can see it changed but not whether your calls depend on
+              it. One comparison against your integration settles it.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-additive">New</span></h3>
-            <p>Something new you can pick up: a new endpoint, a new optional parameter, or an extra
-              field in a response. Adopt it when you're ready, or leave your calls as they are.</p>
+            <p>Only adds: a new endpoint, a new optional parameter, an extra field in a response.
+              Nothing to change. Pick it up when you're ready.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-docs">Documentation</span></h3>
-            <p>Wording, examples or structure in the documentation. No change in API behaviour.</p>
+            <p>How the documentation reads or is organised — wording, a section, a name, which
+              examples are shown. The API itself is unchanged. Nothing to do.</p>
           </div>
         </div>
       </section>
@@ -572,6 +806,16 @@
             against the previous known state and record what moved. That covers every documented
             endpoint along with its parameters, request body and response shape. The date on each
             entry is the date we detected the change.
+          </p>
+          <p style="margin:0;color:var(--ink-soft)">
+            Every route listed on this page links to its own section in the documentation, so you
+            can go from a line here to the endpoint's full reference in one click.
+          </p>
+          <p style="margin:0;color:var(--ink-soft)">
+            Entries marked <em>detected automatically</em> are written by that comparison rather than
+            by a person. They state what moved and nothing more — we don't guess at whether a change
+            reaches your integration, because from here we can't know. If one affects you and the
+            detail isn't enough, say so and we'll add it.
           </p>
           <p style="margin:0;color:var(--ink-soft)">
             One caveat worth being straight about: this tracks the API as documented. An update that
@@ -603,9 +847,101 @@
                        : breaking + ' updates need action';
     }
 
+    // One "change" is one card — the same unit the tabs and the status pill count.
+    var PAGE_SIZE = 20;
+
     var feed = document.getElementById('feed');
+    var pager = document.getElementById('pager');
     var entries = Array.prototype.slice.call(feed.querySelectorAll('.entry'));
+    var days = Array.prototype.slice.call(feed.querySelectorAll('.day'));
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+    var filter = 'all';
+    var page = 1;
+
+    var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function matching() {
+      return entries.filter(function (e) {
+        return filter === 'all' || e.getAttribute('data-impact') === filter;
+      });
+    }
+
+    // Page numbers around the current page, with the first and last always reachable.
+    // A year of entries is dozens of pages; listing every one of them is a wall.
+    function pageWindow(pages) {
+      var want = {1: true, 2: true};
+      want[pages] = true;
+      want[pages - 1] = true;
+      want[page - 1] = true;
+      want[page] = true;
+      want[page + 1] = true;
+      var out = [];
+      for (var i = 1; i <= pages; i++) {
+        if (!want[i]) continue;
+        if (out.length && i - out[out.length - 1] > 1) out.push('gap');
+        out.push(i);
+      }
+      return out;
+    }
+
+    function button(label, target, disabled, current) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (disabled) b.disabled = true;
+      if (current) b.setAttribute('aria-current', 'page');
+      b.addEventListener('click', function () {
+        page = target;
+        render();
+        feed.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      });
+      return b;
+    }
+
+    function drawPager(pages, total, start, count) {
+      pager.textContent = '';
+      if (pages < 2) { pager.hidden = true; return; }
+      pager.hidden = false;
+
+      var status = document.createElement('p');
+      status.className = 'pager-status';
+      status.textContent = 'Showing ' + (start + 1) + '–' + (start + count) +
+                           ' of ' + total + ' changes';
+      pager.appendChild(status);
+
+      var nav = document.createElement('div');
+      nav.className = 'pager-buttons';
+      nav.appendChild(button('Previous', page - 1, page === 1, false));
+      pageWindow(pages).forEach(function (item) {
+        if (item === 'gap') {
+          var gap = document.createElement('span');
+          gap.className = 'pager-gap';
+          gap.textContent = '…';
+          nav.appendChild(gap);
+          return;
+        }
+        nav.appendChild(button(String(item), item, false, item === page));
+      });
+      nav.appendChild(button('Next', page + 1, page === pages, false));
+      pager.appendChild(nav);
+    }
+
+    function render() {
+      var shown = matching();
+      var pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+      if (page > pages) page = pages;
+      var start = (page - 1) * PAGE_SIZE;
+      var onPage = shown.slice(start, start + PAGE_SIZE);
+
+      entries.forEach(function (entry) { entry.hidden = onPage.indexOf(entry) === -1; });
+      // A day whose cards are all filtered or paged out would leave its date
+      // heading standing over nothing.
+      days.forEach(function (day) {
+        day.hidden = day.querySelectorAll('.entry:not([hidden])').length === 0;
+      });
+      feed.setAttribute('data-empty', String(shown.length === 0));
+      drawPager(pages, shown.length, start, onPage.length);
+    }
 
     // Show each tab's count so an empty category is obvious before clicking it.
     tabs.forEach(function (tab) {
@@ -620,15 +956,13 @@
 
       tab.addEventListener('click', function () {
         tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
-        var shown = 0;
-        entries.forEach(function (entry) {
-          var match = want === 'all' || entry.getAttribute('data-impact') === want;
-          entry.hidden = !match;
-          if (match) shown++;
-        });
-        feed.setAttribute('data-empty', String(shown === 0));
+        filter = want;
+        page = 1;  // a filter change starts a new list
+        render();
       });
     });
+
+    render();
   })();
 </script>
 

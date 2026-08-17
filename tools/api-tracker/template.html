@@ -251,7 +251,20 @@
   .section-head .aside { font-size: .875rem; color: var(--ink-mute); }
 
   /* ---- entry cards ------------------------------------------------- */
-  .feed { display: flex; flex-direction: column; gap: 1rem; }
+  /* The feed separates days; cards inside a day sit closer together, so one day's
+     worth of movement reads as one block however many severities it spans. */
+  .feed { display: flex; flex-direction: column; gap: 2rem; }
+  .day { display: flex; flex-direction: column; gap: .625rem; }
+  .day[hidden] { display: none; }
+  .day-head {
+    margin: 0;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -281,7 +294,7 @@
   .tag-additive { background: var(--additive-bg); color: var(--additive); }
   .tag-docs     { background: var(--docs-bg);     color: var(--docs); }
 
-  .entry h3 {
+  .entry h4 {
     margin: 0;
     font-size: 1.0625rem;
     font-weight: 600;
@@ -291,6 +304,74 @@
     text-wrap: balance;
   }
   .entry .summary { margin: 0; color: var(--ink-soft); max-width: 68ch; }
+
+  /* ---- per-endpoint change list ------------------------------------- */
+  /* One block per endpoint: route on top, what happened to it underneath. The
+     facts indent to the path's column so the verbs form a scannable gutter. */
+  .changes {
+    margin: .125rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+  .changes > li { border-left: 2px solid var(--line); padding-left: .875rem; }
+  .route {
+    margin: 0 0 .15rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .5rem;
+  }
+  /* The route is the link. It has to look clickable without turning twenty purple
+     lines into the loudest thing on the page: a quiet underline, accent on hover. */
+  .route a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .5rem;
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .route a:hover { text-decoration-color: var(--link); }
+  .route a:hover code, .route a:hover .verb { color: var(--link); }
+  .route a::after {
+    content: "↗";
+    font-size: .6875rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+  }
+  .route a:hover::after { color: var(--link); }
+  .verb {
+    font-family: var(--mono);
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: var(--ink-mute);
+    min-width: 3.25rem;
+    flex: none;
+  }
+  .route code {
+    font-family: var(--mono);
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: break-all;
+  }
+  .route-name { font-size: .8125rem; color: var(--ink-mute); }
+  .facts {
+    margin: 0;
+    padding: 0 0 0 3.75rem;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+  }
+  .facts li { font-size: .9375rem; color: var(--ink-soft); }
+  .entry .more { margin: 0; font-size: .875rem; color: var(--ink-mute); }
+
   .entry .endpoint { margin: 0; overflow-x: auto; }
   .entry .endpoint code {
     font-family: var(--mono);
@@ -328,13 +409,46 @@
     margin: 0;
     font-size: .875rem;
     color: var(--ink-mute);
-    border-left: 2px solid var(--line-strong);
+    border-left: 2px solid var(--line);
     padding-left: .7rem;
   }
   .entry .effective strong { color: var(--ink); font-weight: 600; }
   .no-match { color: var(--ink-mute); margin: 0; display: none; }
   .feed[data-empty="true"] .no-match { display: block; }
   .empty { color: var(--ink-mute); margin: 0; }
+
+  /* ---- pager ------------------------------------------------------- */
+  .pager { margin-top: 1.75rem; display: flex; flex-direction: column; gap: .625rem; }
+  .pager[hidden] { display: none; }
+  .pager-status {
+    margin: 0;
+    font-size: .875rem;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .pager-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
+  .pager-buttons button {
+    appearance: none;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .3rem .625rem;
+    min-width: 2.25rem;
+    cursor: pointer;
+    transition: color .12s ease, border-color .12s ease;
+  }
+  .pager-buttons button:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-mute); }
+  .pager-buttons button:disabled { opacity: .45; cursor: default; }
+  .pager-buttons button[aria-current="page"] {
+    color: var(--ground);
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  .pager-gap { color: var(--ink-mute); font-size: .875rem; padding: 0 .125rem; }
 
   /* ---- reference card grid ----------------------------------------- */
   .panel { margin-top: 3rem; }
@@ -376,6 +490,8 @@
     .hero .shell { min-height: 220px; padding-bottom: 4rem; }
     .hero h1 { font-size: 1.625rem; }
     .wave { height: 55px; }
+    /* No room for a verb gutter on a phone: let the facts run full width. */
+    .facts { padding-left: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
@@ -436,27 +552,32 @@
         <p class="no-match">No changes in this category.</p>
       </div>
 
+      <nav class="pager" id="pager" aria-label="Change log pages" hidden></nav>
+
       <section class="panel">
         <div class="section-head"><h2>How to read this page</h2></div>
         <div class="grid">
           <div class="card">
             <h3><span class="tag tag-breaking">Action needed</span></h3>
-            <p>Your integration needs an update to stay on the current version: an endpoint or
-              field that moved, a parameter that became required, or a change to authentication.</p>
+            <p>A call that was correct before is wrong now, and we can say so with certainty: the
+              endpoint is gone, authentication changed, the URL's path variables changed, or the
+              request body switched format. Change your code for these.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-review">Worth checking</span></h3>
-            <p>An update that may or may not apply to you: a new field whose requirement isn't
-              settled, a header change, a reorganised endpoint. Worth a look at your integration.</p>
+            <p>Something moved that may or may not reach you — a parameter, a field in a request or
+              response example, a header. We can see it changed but not whether your calls depend on
+              it. One comparison against your integration settles it.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-additive">New</span></h3>
-            <p>Something new you can pick up: a new endpoint, a new optional parameter, or an extra
-              field in a response. Adopt it when you're ready, or leave your calls as they are.</p>
+            <p>Only adds: a new endpoint, a new optional parameter, an extra field in a response.
+              Nothing to change. Pick it up when you're ready.</p>
           </div>
           <div class="card">
             <h3><span class="tag tag-docs">Documentation</span></h3>
-            <p>Wording, examples or structure in the documentation. No change in API behaviour.</p>
+            <p>How the documentation reads or is organised — wording, a section, a name, which
+              examples are shown. The API itself is unchanged. Nothing to do.</p>
           </div>
         </div>
       </section>
@@ -470,6 +591,16 @@
             against the previous known state and record what moved. That covers every documented
             endpoint along with its parameters, request body and response shape. The date on each
             entry is the date we detected the change.
+          </p>
+          <p style="margin:0;color:var(--ink-soft)">
+            Every route listed on this page links to its own section in the documentation, so you
+            can go from a line here to the endpoint's full reference in one click.
+          </p>
+          <p style="margin:0;color:var(--ink-soft)">
+            Entries marked <em>detected automatically</em> are written by that comparison rather than
+            by a person. They state what moved and nothing more — we don't guess at whether a change
+            reaches your integration, because from here we can't know. If one affects you and the
+            detail isn't enough, say so and we'll add it.
           </p>
           <p style="margin:0;color:var(--ink-soft)">
             One caveat worth being straight about: this tracks the API as documented. An update that
@@ -501,9 +632,101 @@
                        : breaking + ' updates need action';
     }
 
+    // One "change" is one card — the same unit the tabs and the status pill count.
+    var PAGE_SIZE = 20;
+
     var feed = document.getElementById('feed');
+    var pager = document.getElementById('pager');
     var entries = Array.prototype.slice.call(feed.querySelectorAll('.entry'));
+    var days = Array.prototype.slice.call(feed.querySelectorAll('.day'));
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+    var filter = 'all';
+    var page = 1;
+
+    var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function matching() {
+      return entries.filter(function (e) {
+        return filter === 'all' || e.getAttribute('data-impact') === filter;
+      });
+    }
+
+    // Page numbers around the current page, with the first and last always reachable.
+    // A year of entries is dozens of pages; listing every one of them is a wall.
+    function pageWindow(pages) {
+      var want = {1: true, 2: true};
+      want[pages] = true;
+      want[pages - 1] = true;
+      want[page - 1] = true;
+      want[page] = true;
+      want[page + 1] = true;
+      var out = [];
+      for (var i = 1; i <= pages; i++) {
+        if (!want[i]) continue;
+        if (out.length && i - out[out.length - 1] > 1) out.push('gap');
+        out.push(i);
+      }
+      return out;
+    }
+
+    function button(label, target, disabled, current) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (disabled) b.disabled = true;
+      if (current) b.setAttribute('aria-current', 'page');
+      b.addEventListener('click', function () {
+        page = target;
+        render();
+        feed.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      });
+      return b;
+    }
+
+    function drawPager(pages, total, start, count) {
+      pager.textContent = '';
+      if (pages < 2) { pager.hidden = true; return; }
+      pager.hidden = false;
+
+      var status = document.createElement('p');
+      status.className = 'pager-status';
+      status.textContent = 'Showing ' + (start + 1) + '–' + (start + count) +
+                           ' of ' + total + ' changes';
+      pager.appendChild(status);
+
+      var nav = document.createElement('div');
+      nav.className = 'pager-buttons';
+      nav.appendChild(button('Previous', page - 1, page === 1, false));
+      pageWindow(pages).forEach(function (item) {
+        if (item === 'gap') {
+          var gap = document.createElement('span');
+          gap.className = 'pager-gap';
+          gap.textContent = '…';
+          nav.appendChild(gap);
+          return;
+        }
+        nav.appendChild(button(String(item), item, false, item === page));
+      });
+      nav.appendChild(button('Next', page + 1, page === pages, false));
+      pager.appendChild(nav);
+    }
+
+    function render() {
+      var shown = matching();
+      var pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+      if (page > pages) page = pages;
+      var start = (page - 1) * PAGE_SIZE;
+      var onPage = shown.slice(start, start + PAGE_SIZE);
+
+      entries.forEach(function (entry) { entry.hidden = onPage.indexOf(entry) === -1; });
+      // A day whose cards are all filtered or paged out would leave its date
+      // heading standing over nothing.
+      days.forEach(function (day) {
+        day.hidden = day.querySelectorAll('.entry:not([hidden])').length === 0;
+      });
+      feed.setAttribute('data-empty', String(shown.length === 0));
+      drawPager(pages, shown.length, start, onPage.length);
+    }
 
     // Show each tab's count so an empty category is obvious before clicking it.
     tabs.forEach(function (tab) {
@@ -518,14 +741,12 @@
 
       tab.addEventListener('click', function () {
         tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
-        var shown = 0;
-        entries.forEach(function (entry) {
-          var match = want === 'all' || entry.getAttribute('data-impact') === want;
-          entry.hidden = !match;
-          if (match) shown++;
-        });
-        feed.setAttribute('data-empty', String(shown === 0));
+        filter = want;
+        page = 1;  // a filter change starts a new list
+        render();
       });
     });
+
+    render();
   })();
 </script>
