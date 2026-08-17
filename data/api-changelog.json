@@ -1,9 +1,21 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
-  "last_checked": "11 August 2026",
-  "endpoint_count": 148,
+  "last_checked": "17 August 2026",
+  "endpoint_count": 151,
   "contact": "write to Gi at giovanna@wxrks.com.",
   "entries": [
+    {
+      "date": "2026-08-17",
+      "impact": "additive",
+      "auto": true,
+      "title": "New endpoints and fields",
+      "summary": "GET /api/v3/user/:userUUID/rate: new endpoint in Users; POST /api/v3/user/:userUUID/rate: new endpoint in Users; PUT /api/v3/user/:userUUID/rate/:userRateUUID: new endpoint in Users.",
+      "endpoints": [
+        "GET /api/v3/user/:userUUID/rate",
+        "POST /api/v3/user/:userUUID/rate",
+        "PUT /api/v3/user/:userUUID/rate/:userRateUUID"
+      ]
+    },
     {
       "date": "2026-08-11",
       "impact": "docs",
