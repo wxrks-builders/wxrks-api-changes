@@ -55,7 +55,7 @@ python3 tools/api-tracker/apitrack.py build --out .
 
 | Path | What it is |
 |---|---|
-| `index.html` | The published page. Generated. Self-contained: fonts inlined, no external requests. |
+| `index.html` | The published page. Generated. Self-contained: fonts and the favicon inlined, no external requests. |
 | `data/api-changelog.json` | The entries the page renders. This is the file to edit. |
 | `data/api-snapshots/` | Recorded API surfaces, one file per date. A snapshot is written only when something moved, so each date means a real change. |
 | `tools/api-tracker/` | The tracker: fetch, diff, classify, render. |

@@ -18,6 +18,7 @@ drawn and why. A human confirms the call before the page is published.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import html
 import json
@@ -807,6 +808,32 @@ PUBLISHED_URL = (
 )
 
 
+def favicon_links() -> str:
+    """The wxrks mark as inline `<link rel="icon">` tags.
+
+    The files are wxrks' own published favicon and web clip, copied into this folder so
+    a build never depends on reaching a CDN. Inlined as data URIs for the same reason
+    the fonts are: this page ships as a single self-contained file, and a linked icon
+    would be one more request to get wrong.
+
+    32px covers the tab even on a high-DPI screen — a 16 CSS px slot at 2x wants exactly
+    32 device px. The 256px copy is only declared as the touch icon, because a data URI
+    cannot be shared between two tags and repeating it would add 10KB to every page for
+    a sharpness no tab can show.
+    """
+    here = Path(__file__).resolve().parent
+    tags = [("favicon-32.png", '<link rel="icon" type="image/png" sizes="32x32" href="{uri}">'),
+            ("favicon-256.png", '<link rel="apple-touch-icon" href="{uri}">')]
+    links = []
+    for name, tag in tags:
+        icon = here / name
+        if not icon.exists():
+            continue
+        b64 = base64.b64encode(icon.read_bytes()).decode("ascii")
+        links.append(tag.format(uri=f"data:image/png;base64,{b64}"))
+    return "\n".join(links) + ("\n" if links else "")
+
+
 def standalone_document(page: str, data: dict) -> str:
     """Wrap the page as a complete HTML document for self-hosting.
 
@@ -820,6 +847,7 @@ def standalone_document(page: str, data: dict) -> str:
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f'<meta name="description" content="{esc(SOCIAL_DESCRIPTION)}">\n'
+        + favicon_links() +
         '<meta property="og:title" content="wxrks API changes">\n'
         f'<meta property="og:description" content="{esc(SOCIAL_DESCRIPTION)}">\n'
         '<meta property="og:type" content="website">\n'
