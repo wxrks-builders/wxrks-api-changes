@@ -840,11 +840,19 @@ def standalone_document(page: str, data: dict) -> str:
     The Artifact host supplies its own `<head>`, so `page.html` is a fragment. A page
     served from api-changes.wxrks.com has to carry its own doctype, charset and
     viewport — without the viewport meta, mobile browsers render it at desktop width.
+
+    The self-hosted page is light whatever the reader's machine is set to. Two things
+    are needed for that, not one: `data-theme="light"` switches off the stylesheet's own
+    dark palette, which is gated on `:not([data-theme="light"])`, and the `color-scheme`
+    meta tells the browser the page only offers light so it does not apply an automatic
+    dark inversion of its own (Chrome does this) and so scrollbars and form controls
+    stay light too. The template keeps both palettes; only this wrapper pins one.
     """
     checked = esc(data.get("last_checked", ""))
     return (
-        '<!doctype html>\n<html lang="en">\n<head>\n'
+        '<!doctype html>\n<html lang="en" data-theme="light">\n<head>\n'
         '<meta charset="utf-8">\n'
+        '<meta name="color-scheme" content="light">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f'<meta name="description" content="{esc(SOCIAL_DESCRIPTION)}">\n'
         + favicon_links() +
