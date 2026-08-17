@@ -30,7 +30,11 @@
     --sans: 'Inter', -apple-system, system-ui, Ubuntu, 'Helvetica Neue', sans-serif;
     --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
     --shell: 1200px;
-    --column: 823px;
+    /* Wide enough that the longest documented route fits on one line with room to
+       spare. At 823px the longest (`GET /api/v3/net-rate-settings/list-org-unit-
+       account/:orgUnitUUID` plus its name) needed 741 of 761 available px, so any
+       slightly longer path wrapped — and it wrapped on any window under ~876px. */
+    --column: 980px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -452,11 +456,16 @@
 
   /* ---- reference card grid ----------------------------------------- */
   .panel { margin-top: 3rem; }
+  /* Pinned to two columns rather than auto-fit: the wider text column would other-
+     wise fit three and leave the fourth card stranded on a row of its own. */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
+  @media (max-width: 46rem) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  /* Prose stays readable even though the column that holds it got wider. */
+  .panel .card p { max-width: 68ch; }
   .grid .card { padding: 1.25rem 1.375rem; display: flex; flex-direction: column; gap: .625rem; }
   .grid .card h3 {
     margin: 0;
@@ -597,10 +606,11 @@
             can go from a line here to the endpoint's full reference in one click.
           </p>
           <p style="margin:0;color:var(--ink-soft)">
-            Entries marked <em>detected automatically</em> are written by that comparison rather than
-            by a person. They state what moved and nothing more — we don't guess at whether a change
-            reaches your integration, because from here we can't know. If one affects you and the
-            detail isn't enough, say so and we'll add it.
+            The entries are written by that comparison rather than by a person, so they state what
+            moved and nothing more. We don't guess at whether a change reaches your integration,
+            because from here we can't know — where we have looked into one ourselves, the entry
+            carries a <strong>What to do</strong> note. If an entry affects you and the detail isn't
+            enough, ask us and we'll add it.
           </p>
           <p style="margin:0;color:var(--ink-soft)">
             One caveat worth being straight about: this tracks the API as documented. An update that
@@ -612,8 +622,8 @@
 
       <footer>
         <p style="margin:0">
-          Want more detail on any of these, or expected an update that isn't listed?
-          A short reply is plenty: <!--CONTACT-->
+          Questions about any of these, or expected an update that isn't listed? Email
+          <a href="mailto:<!--CONTACT-->"><!--CONTACT--></a> and we'll pick it up.
         </p>
         <p style="margin:0">Let's make it <em>wxrks</em>!</p>
       </footer>

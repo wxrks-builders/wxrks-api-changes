@@ -2,7 +2,7 @@
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
   "last_checked": "17 August 2026",
   "endpoint_count": 166,
-  "contact": "write to Gi at giovanna@wxrks.com.",
+  "contact": "help@wxrks.com",
   "entries": [
     {
       "date": "2026-08-17",

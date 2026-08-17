@@ -752,10 +752,12 @@ def render_entry(entry: dict) -> str:
         parts.append('    <span class="action-label">What to do</span>')
         parts.append(f'    <p>{esc(entry["action"])}</p>')
         parts.append("  </div>")
-    elif entry.get("auto"):
-        # Never present a machine-written entry as reviewed guidance.
-        parts.append(f'  <p class="detected">{esc(AUTO_NOTE)}</p>')
-    elif impact in ("additive", "docs"):
+    elif not entry.get("auto") and impact in ("additive", "docs"):
+        # Auto entries end here, with no trailing note at all. The per-card "Detected
+        # automatically" marker was dropped — "Where this comes from" now states that
+        # the entries are written by the comparison, and repeating it on every card
+        # crowded out the facts. What still separates a reviewed entry from a machine
+        # one is the "What to do" block above, which only a person can fill in.
         parts.append(f'  <p class="no-action">{esc(default_note)}</p>')
 
     if entry.get("effective"):
@@ -883,11 +885,6 @@ def cmd_build(args) -> int:
         print("publish it with the Artifact tool to refresh the live page (same URL).")
     return 0
 
-
-# Short by design. Repeating the full explanation on every card crowded the facts out;
-# it now sits once in the "Where this comes from" panel. What must never be lost is the
-# marker itself — an auto entry has to be visibly distinct from reviewed guidance.
-AUTO_NOTE = "Detected automatically"
 
 # What the diff can honestly say per severity, with no human judgement added.
 AUTO_TITLES = {
