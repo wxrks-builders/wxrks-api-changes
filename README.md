@@ -81,8 +81,11 @@ out as a breaking removal plus an unrelated new endpoint in a different card —
 that an endpoint was gone when it was still there under a new path. It now reads as one fact on the
 new route, telling the reader which URL to change.
 
-One gap worth knowing: `build` renders without fetching, so a hand-edited change log can publish a
-contradicted claim until the next daily `auto` withdraws it.
+`build` verifies too, and that is the case it matters most for: it runs after someone edits wording by
+hand, which is exactly when a claim the documentation no longer supports reaches the page, and the
+daily `auto` would not withdraw it until tomorrow. If the documentation cannot be reached the build
+stops and writes nothing rather than publishing unverified — `--no-verify` renders anyway, with a
+warning, for when you knowingly want to work offline.
 
 To replace an auto entry with reviewed wording, edit `data/api-changelog.json`: rewrite `title` and
 `summary`, add an `action`, and drop the `"auto": true` flag. The `action` renders as the **What to
@@ -111,6 +114,7 @@ python3 tools/api-tracker/apitrack.py auto --out .   # what the Action runs
 python3 tools/api-tracker/apitrack.py status         # is the published page current?
 python3 tools/api-tracker/apitrack.py diff           # compare the last two snapshots
 python3 tools/api-tracker/apitrack.py build --out .  # rebuild after editing the change log
+python3 tools/api-tracker/apitrack.py build --no-verify   # render offline, unverified
 ```
 
 Python 3.9+, standard library only. Nothing to install.

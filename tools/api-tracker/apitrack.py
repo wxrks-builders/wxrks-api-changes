@@ -990,7 +990,40 @@ def build_page(data: dict) -> str:
 
 
 def cmd_build(args) -> int:
+    """Render the page from the change log, after checking it against the live docs.
+
+    `build` is what runs after someone edits wording by hand, which is exactly when a
+    claim the documentation no longer supports can reach the page — the daily `auto`
+    would not withdraw it until tomorrow. So the fetch is part of building, and its
+    failure stops the build rather than quietly publishing an unverified page. Use
+    `--no-verify` when you knowingly want to render offline.
+    """
     data = json.loads(CHANGELOG.read_text())
+
+    if args.no_verify:
+        print("WARNING: --no-verify — rendering without checking the change log against "
+              "the live documentation.")
+    else:
+        try:
+            surface = fetch_surface()
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError,
+                json.JSONDecodeError) as exc:
+            print(f"ERROR: could not reach the API documentation to verify: {exc}")
+            print("       Nothing was written. Retry, or run with --no-verify to render "
+                  "the change log as it stands.")
+            return 1
+        withdrawn = verify_against_docs(data.get("entries") or [], surface, date.today())
+        if withdrawn:
+            # The withdrawal is a fact about the record, not just about this render, so
+            # it is saved. A page and a change log that disagree is how a retracted
+            # claim comes back on the next build.
+            for note in withdrawn:
+                print(f"  {note}")
+            CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+            print(f"withdrew {len(withdrawn)} fact"
+                  f"{'' if len(withdrawn) == 1 else 's'} the documentation no longer "
+                  "supports, and saved the change log")
+
     entries = [e for e in sorted(data.get("entries") or [], key=lambda e: e["date"],
                                  reverse=True) if renderable(e)]
     alert = alert_count(data, entries)
@@ -1498,6 +1531,8 @@ def main() -> int:
     b = sub.add_parser("build", help="render the client-facing changelog page")
     b.add_argument("--out", metavar="DIR",
                    help="also write DIR/index.html for hosting on a real domain")
+    b.add_argument("--no-verify", action="store_true",
+                   help="render without checking the change log against the live docs")
     b.set_defaults(func=cmd_build)
 
     args = ap.parse_args()
