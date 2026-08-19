@@ -48,8 +48,10 @@ jobs:
           code=$?
           set -e
           echo "code=$code" >> "$GITHUB_OUTPUT"
-          # 0 = nothing moved, 10 = moved and the page was rebuilt. Anything else is
-          # a real failure (docs unreachable, bad payload) and should fail the run.
+          # 0 = nothing to commit, 10 = the page changed and should be committed. A 10
+          # covers two cases: the API surface moved, or it did not and only the check
+          # date advanced. Both belong on the live page. Anything else is a real
+          # failure (docs unreachable, bad payload) and should fail the run.
           if [ "$code" -ne 0 ] && [ "$code" -ne 10 ]; then
             echo "apitrack exited $code"
             exit "$code"
@@ -65,13 +67,22 @@ jobs:
             echo "nothing staged; skipping commit"
             exit 0
           fi
-          git commit -m "API changes detected on $(date -u +%Y-%m-%d)"
+          # A snapshot is only written when the surface actually moved, so its presence
+          # in the staged set is what separates a real change from a freshness stamp.
+          # Labelling a date bump "API changes detected" would make the history lie.
+          if git diff --cached --name-only | grep -q '^data/api-snapshots/'; then
+            git commit -m "API changes detected on $(date -u +%Y-%m-%d)"
+          else
+            git commit -m "Checked the API docs on $(date -u +%Y-%m-%d), no change"
+          fi
           git push
 
       - name: Summary
         run: |
           if [ "${{ steps.track.outputs.code }}" = "10" ]; then
-            echo "API surface moved; page rebuilt and pushed." >> "$GITHUB_STEP_SUMMARY"
+            echo "Page rebuilt and pushed. See the step log for whether the API surface" \
+                 "moved or only the check date advanced." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "No change in the documented API surface." >> "$GITHUB_STEP_SUMMARY"
+            echo "Nothing to commit; the page was already current for today." \
+              >> "$GITHUB_STEP_SUMMARY"
           fi

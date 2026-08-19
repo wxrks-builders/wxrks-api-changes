@@ -528,6 +528,39 @@ def notify(title: str, message: str) -> None:
         pass
 
 
+def stamp_check(data: dict, day: date, endpoint_count: int | None = None) -> bool:
+    """Record that the docs were checked on `day`. True if anything actually changed.
+
+    Two forms of the date are stored. `last_checked` is what the page prints, and
+    `last_checked_date` is the ISO form, which the page needs in order to tell a
+    finding from today apart from one from last week — see `check_date`.
+    """
+    before = (data.get("last_checked"), data.get("last_checked_date"),
+              data.get("endpoint_count"))
+    data["last_checked"] = f"{day.day} {day:%B %Y}"
+    data["last_checked_date"] = day.isoformat()
+    if endpoint_count is not None:
+        data["endpoint_count"] = endpoint_count
+    return before != (data.get("last_checked"), data.get("last_checked_date"),
+                      data.get("endpoint_count"))
+
+
+def check_date(data: dict) -> str:
+    """The ISO date of the last check, for scoping the page's alert to it.
+
+    Falls back to parsing the printed form so a change log written before
+    `last_checked_date` existed still scopes correctly, rather than silently
+    treating every historical finding as current.
+    """
+    iso = data.get("last_checked_date")
+    if iso:
+        return str(iso)
+    try:
+        return datetime.strptime(data.get("last_checked", ""), "%d %B %Y").date().isoformat()
+    except ValueError:
+        return ""
+
+
 def stamp_last_checked(day: date) -> None:
     """Keep the changelog's freshness claim true without a rebuild.
 
@@ -539,13 +572,24 @@ def stamp_last_checked(day: date) -> None:
         if not CHANGELOG.exists():
             return
         data = json.loads(CHANGELOG.read_text())
-        human = f"{day.day} {day:%B %Y}"
-        if data.get("last_checked") == human:
+        if not stamp_check(data, day):
             return
-        data["last_checked"] = human
         CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     except OSError:
         pass
+
+
+def write_page(data: dict, out: str | None) -> None:
+    """Render the fragment, and the deployable folder when one was asked for."""
+    page = build_page(data)
+    PAGE_OUT.write_text(page)
+    if out:
+        # A deploy folder holds nothing but the page. This repo carries account
+        # files, pricing and portfolio data — never serve it as a web root.
+        out_dir = Path(out)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "index.html").write_text(standalone_document(page, data))
+        (out_dir / "robots.txt").write_text("User-agent: *\nAllow: /\n")
 
 
 def cmd_check(args) -> int:
@@ -865,6 +909,23 @@ def standalone_document(page: str, data: dict) -> str:
     )
 
 
+def alert_count(data: dict, entries: list[dict]) -> int:
+    """How many action-needed findings the latest check produced.
+
+    The band at the top of the page answers "is there something for me to do right
+    now". Counting every breaking entry ever recorded answers a different question and
+    answers it badly: a change from last month that the reader already handled would
+    keep the alert lit for good, and an alert that is always on is an alert nobody
+    reads. So it is scoped to the day we last looked. The entries themselves keep
+    their own dates and tags, so the history is still all there in the feed.
+    """
+    today = check_date(data)
+    if not today:
+        return 0
+    return sum(1 for e in entries
+               if e.get("impact") == "breaking" and e.get("date") == today)
+
+
 def build_page(data: dict) -> str:
     """Render the page fragment from the change log. Pure: no files written."""
     entries = sorted(data.get("entries") or [], key=lambda e: e["date"], reverse=True)
@@ -883,7 +944,8 @@ def build_page(data: dict) -> str:
         .replace("<!--ENTRIES-->", body)
         .replace("<!--CHECKED-->", esc(data.get("last_checked", "—")))
         .replace("<!--ENDPOINTS-->", esc(data.get("endpoint_count", "—")))
-        .replace("<!--BREAKING-->", str(counts["breaking"]))
+        .replace("<!--BREAKING-->", str(alert_count(data, entries)))
+        .replace("<!--BREAKING-TOTAL-->", str(counts["breaking"]))
         .replace("<!--TOTAL-->", str(len(entries)))
         .replace("<!--CONTACT-->", esc(data.get("contact", "")))
     )
@@ -892,7 +954,7 @@ def build_page(data: dict) -> str:
 def cmd_build(args) -> int:
     data = json.loads(CHANGELOG.read_text())
     entries = sorted(data.get("entries") or [], key=lambda e: e["date"], reverse=True)
-    counts = {s: sum(1 for e in entries if e.get("impact") == s) for s in SEVERITIES}
+    alert = alert_count(data, entries)
     page = build_page(data)
     PAGE_OUT.write_text(page)
 
@@ -907,7 +969,7 @@ def cmd_build(args) -> int:
             print("         Publishing now would show a fresh check date and omit that "
                   "change. Write it up first.")
     print(f"built {PAGE_OUT.relative_to(REPO)}  ({len(entries)} entries, "
-          f"{counts['breaking']} action-needed)")
+          f"{alert} action-needed as of {data.get('last_checked', 'the last check')})")
 
     if args.out:
         # A deploy folder holds nothing but the page. This repo carries account
@@ -1093,8 +1155,20 @@ def cmd_auto(args) -> int:
 
     old = json.loads(previous.read_text())
     if old["endpoints"] == new["endpoints"]:
-        print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints)")
-        return 0
+        # Nothing moved, but the page still has something to say: that we looked today.
+        # A page dated four days ago reads as abandoned whether or not the API is
+        # stable, and the alert band needs today's date to know that yesterday's
+        # breaking change is no longer news. So stamp, rebuild, and ask to be committed
+        # — the freshness claim is part of what this page publishes, not decoration.
+        if not stamp_check(data, today, new["endpoint_count"]):
+            print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints); "
+                  "already stamped today, nothing to commit")
+            return 0
+        CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+        write_page(data, args.out)
+        print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints); "
+              "check date updated and page rebuilt")
+        return 10
 
     result = diff_snapshots(old, new)
     # One snapshot per date — see the note in cmd_check. A same-day rerun overwrites
@@ -1129,17 +1203,10 @@ def cmd_auto(args) -> int:
     folded = sum(1 for e in added if e.get("_merged"))
     added = [e for e in added if not e.pop("_merged", False)]
     data["entries"] = added + kept
-    data["last_checked"] = f"{today.day} {today:%B %Y}"
-    data["endpoint_count"] = new["endpoint_count"]
+    stamp_check(data, today, new["endpoint_count"])
     CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
-    page = build_page(data)
-    PAGE_OUT.write_text(page)
-    if args.out:
-        out_dir = Path(args.out)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "index.html").write_text(standalone_document(page, data))
-        (out_dir / "robots.txt").write_text("User-agent: *\nAllow: /\n")
+    write_page(data, args.out)
 
     counts = result["counts"]
     headline = " · ".join(f"{counts[s]} {s}" for s in SEVERITIES if counts[s])

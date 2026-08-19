@@ -547,7 +547,8 @@
     <div class="column">
       <div class="section-head">
         <h2>Changes</h2>
-        <span class="status-pill" id="status" data-breaking="<!--BREAKING-->">
+        <span class="status-pill" id="status" data-breaking="<!--BREAKING-->"
+              data-breaking-total="<!--BREAKING-TOTAL-->">
           <svg class="icon-ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3.1 4.9-3.9 3.9a.75.75 0 0 1-1.06 0L4.9 8.96a.75.75 0 1 1 1.06-1.06l.71.7 3.37-3.36a.75.75 0 0 1 1.06 1.06Z"/></svg>
           <svg class="icon-alert" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 3a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5.25A.75.75 0 0 1 8 4.5Zm0 6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z"/></svg>
           <span id="verdict">No updates need action</span>
@@ -633,13 +634,20 @@
 
 <script>
   (function () {
+    // `breaking` is only what the latest check found. `total` is every action-needed
+    // entry on the page, which is what the tab counts. Saying "no updates need action"
+    // beside a tab reading "Action needed 3" would look like a contradiction, so the
+    // wording says "nothing new" whenever history exists but today is clear.
     var pill = document.getElementById('status');
     var breaking = parseInt(pill.getAttribute('data-breaking'), 10) || 0;
+    var total = parseInt(pill.getAttribute('data-breaking-total'), 10) || 0;
+    var verdict = document.getElementById('verdict');
     if (breaking > 0) {
       pill.setAttribute('data-state', 'attention');
-      document.getElementById('verdict').textContent =
-        breaking === 1 ? '1 update needs action'
-                       : breaking + ' updates need action';
+      verdict.textContent = breaking === 1 ? '1 update needs action'
+                                           : breaking + ' updates need action';
+    } else if (total > 0) {
+      verdict.textContent = 'Nothing new needs action';
     }
 
     // One "change" is one card — the same unit the tabs and the status pill count.

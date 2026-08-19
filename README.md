@@ -1,7 +1,9 @@
 # wxrks API changes
 
 The published change tracker for the [wxrks API](https://dev.wxrks.com/), live at
-**api-changes.wxrks.com**.
+**api-changes.agents.wxrks.app**, which serves `index.html` from `main` (allow up to ~30 minutes
+after a push). The `CNAME` file still names `api-changes.wxrks.com`, left from a GitHub Pages setup;
+that host does not answer and the file is stale.
 
 ## It updates itself
 
@@ -15,6 +17,12 @@ Daily, not hourly: the change log is dated by day. Several runs in one day split
 across duplicate entries and write extra snapshots, so one run a day is what keeps the history
 readable — one entry set per date, one snapshot per date.
 
+**It commits every day, including the days nothing moved.** On a quiet day the run advances the check
+date, rebuilds and commits that alone. A page still dated four days ago reads as abandoned whether or
+not the API is stable, and the reader has no way to tell the two apart. A snapshot is written only on
+a real change, so the commit message says which kind of day it was, and a second run on the same day
+is a no-op.
+
 `.github/workflows/track.yml` is the whole schedule. You can also run it on demand from the
 **Actions** tab with **Run workflow**.
 
@@ -23,7 +31,9 @@ readable — one entry set per date, one snapshot per date.
 Entries created by the Action state only what the diff found: an endpoint that disappeared, a
 parameter that appeared, a response field that changed. Facts are grouped by endpoint — the route
 once, then what happened to it — and every route links to its own section in the documentation.
-Entries are flagged `auto` and the page marks them as detected automatically.
+Entries are flagged `auto` in the change log. The page no longer badges them one by one — "Where
+this comes from" states that the entries come from the comparison, and what marks an entry as
+reviewed is the **What to do** note, which only a person can write.
 
 They deliberately carry **no guidance about what to do**. Nothing in this pipeline can know whether
 a new field is required or how a change affects a particular integration, and publishing a guess to
@@ -43,9 +53,15 @@ instead, and the reader decides. The rationale is in `CLASSIFICATION` in `apitra
 The failure this guards against is a false "Action needed". A developer who opens their integration
 three times for nothing stops trusting the page, and then a real breaking change goes unread.
 
+For the same reason the alert band at the top counts only what the **latest check** found, not every
+breaking entry ever recorded. Otherwise one change from last month keeps the alert lit for good, and
+an alert that is always on is an alert nobody reads. When the history holds action-needed entries but
+today is clear, the band reads "Nothing new needs action" rather than contradicting the tab count.
+The entries keep their own dates and tags, so nothing disappears from the feed.
+
 To replace an auto entry with reviewed wording, edit `data/api-changelog.json`: rewrite `title` and
-`summary`, add an `action`, and drop the `"auto": true` flag. The provenance note disappears and the
-entry reads as reviewed guidance. Then rebuild:
+`summary`, add an `action`, and drop the `"auto": true` flag. The `action` renders as the **What to
+do** note, which is what tells a reader the entry was looked at by a person. Then rebuild:
 
 ```bash
 python3 tools/api-tracker/apitrack.py build --out .
@@ -79,9 +95,9 @@ Python 3.9+, standard library only. Nothing to install.
 **It tracks the documentation, not the API.** A change that ships without the docs changing is
 invisible here. The page says so and asks readers to report it.
 
-**GitHub disables scheduled workflows after 60 days of repository inactivity.** Commits from the
-Action itself count as activity, so this only bites if the API stays frozen for two months. If the
-page ever goes quiet for a suspiciously long time, check the Actions tab first.
+**GitHub disables scheduled workflows after 60 days of repository inactivity.** Since the Action
+now commits the check date every day, its own commits keep the repository active and the schedule
+alive. If the page ever goes quiet for more than a day, check the Actions tab first.
 
 ## Contact
 
