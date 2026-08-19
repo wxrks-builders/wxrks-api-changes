@@ -6,23 +6,6 @@
   "entries": [
     {
       "date": "2026-08-18",
-      "impact": "breaking",
-      "auto": true,
-      "title": "Changes to endpoints you may already be calling",
-      "summary": "1 endpoint changed.",
-      "changes": [
-        {
-          "endpoint": "GET /api/v3/task/:projectUUID/statuses",
-          "label": "List Project Task Statuses",
-          "items": [
-            "Moved here from GET /api/v3/project/:projectUUID/statuses. Update the URL you call"
-          ],
-          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
-        }
-      ]
-    },
-    {
-      "date": "2026-08-18",
       "impact": "review",
       "auto": true,
       "title": "Changes worth checking against your integration",
@@ -154,11 +137,13 @@
         {
           "endpoint": "GET /api/v3/task/:projectUUID/statuses",
           "label": "List Project Task Statuses",
+          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb",
           "items": [
+            "Now documented at this path. It was GET /api/v3/project/:projectUUID/statuses",
             "Description text updated",
             "Moved to the Tasks section (was Projects)"
           ],
-          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
+          "reviewed": true
         },
         {
           "endpoint": "POST /api/v3/project/:projectUUID/status",

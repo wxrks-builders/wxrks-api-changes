@@ -301,6 +301,10 @@ diff itself establishes that a previously-correct call is now wrong:
     a path variable was added or removed, so the URL is different
     the request body switched between two concrete formats (raw <-> formdata)
 
+A documented path changing is deliberately NOT in that list. It reads like the clearest
+breaking change there is, but the documentation can be correcting itself, and then
+nothing reached the customer — which is exactly what 2026-08-18 turned out to be.
+
 `review` ("Worth checking") is for changes that plausibly require action but where
 the evidence cannot settle it — anything resting on an example body or on the
 `optional` flag. The reader is told what moved and decides for themselves.
@@ -476,8 +480,15 @@ def diff_snapshots(old: dict, new: dict) -> dict:
             moved[key] = target
 
     for old_key, new_key in moved.items():
+        # Not breaking, though it looks like the clearest case of it. A documented path
+        # changing does not establish that a working call now fails: the documentation
+        # may be correcting itself, and then nothing reached the customer at all. That
+        # happened on 2026-08-18 with the task statuses endpoint — a docs reorganisation
+        # published as "Action needed". The diff cannot tell the two apart, so it says
+        # what it saw and leaves the call to the reader; a person who has asked
+        # engineering can move it either way.
         changes.append(_change(
-            "breaking", "endpoint_moved", new_key, label=ne[new_key]["name"],
+            "review", "endpoint_moved", new_key, label=ne[new_key]["name"],
             detail=f"endpoint moved: {oe[old_key]['route']} -> {ne[new_key]['route']}"))
         # The pair has different keys, so the field-level comparison would otherwise be
         # skipped and any other change to the same request lost.
@@ -1121,7 +1132,7 @@ HUMAN_RULES: list[tuple[str, object]] = [
     (r"renamed: (.+) -> (.+)", "Renamed to “\\2” (was “\\1”)"),
     (r"new endpoint in the API", "New endpoint"),
     (r"new endpoint in (.+)", r"New endpoint in the \1 section"),
-    (r"endpoint moved: (.+) -> (.+)", r"Moved here from \1. Update the URL you call"),
+    (r"endpoint moved: (.+) -> (.+)", r"Now documented at this path. It was \1"),
     (r"endpoint no longer in the documentation", "No longer in the documentation"),
     (r"new documentation entry for the existing route (.+)",
      r"Second documentation entry for the existing route \1"),

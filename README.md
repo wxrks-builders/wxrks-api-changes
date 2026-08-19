@@ -75,11 +75,22 @@ Withdrawn facts are kept on the block under `withdrawn`, with `withdrawn_on`, ra
 The page stops saying it and there is still a record of what was said and when it was taken back. An
 entry whose every fact has been withdrawn stops rendering and stops counting toward the alert.
 
-**A moved endpoint is reported as a move.** The collection keeps a request's id when its path
-changes, so the same id on both sides of a diff is one request that moved. Without that, a move came
-out as a breaking removal plus an unrelated new endpoint in a different card — the page announcing
-that an endpoint was gone when it was still there under a new path. It now reads as one fact on the
-new route, telling the reader which URL to change.
+**A moved endpoint is reported as a move, and not as action needed.** The collection keeps a
+request's id when its path changes, so the same id on both sides of a diff is one request that moved.
+Without that, a move came out as a breaking removal plus an unrelated new endpoint in a different
+card — the page announcing that an endpoint was gone when it was still there under a new path.
+
+A move is classified **Worth checking**, not Action needed, which is the less obvious half. A
+documented path changing looks like the clearest breaking change there is, but the documentation can
+be correcting itself, and then nothing reached the customer at all. That is what 2026-08-18 turned
+out to be: a reorganisation on our side, published as "Action needed" on an endpoint that behaves
+exactly as it did. The diff cannot tell the two apart, so it states what it saw and leaves the call
+to the reader.
+
+When someone here does know which it was, the entry moves. Add the fact to that day's card for the
+severity it belongs to and mark the block `"reviewed": true` — a record that the classification was
+a person's, not the diff's. Note that re-deriving a day from its snapshots discards such an
+override, since the diff will classify it again from scratch.
 
 `build` verifies too, and that is the case it matters most for: it runs after someone edits wording by
 hand, which is exactly when a claim the documentation no longer supports reaches the page, and the

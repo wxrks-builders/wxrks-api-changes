@@ -587,7 +587,7 @@
       <div class="section-head">
         <h2>Changes</h2>
         <span class="status-pill" id="status" data-breaking="0"
-              data-breaking-total="1">
+              data-breaking-total="0">
           <svg class="icon-ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm3.1 4.9-3.9 3.9a.75.75 0 0 1-1.06 0L4.9 8.96a.75.75 0 1 1 1.06-1.06l.71.7 3.37-3.36a.75.75 0 0 1 1.06 1.06Z"/></svg>
           <svg class="icon-alert" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 3a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5.25A.75.75 0 0 1 8 4.5Zm0 6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z"/></svg>
           <span id="verdict">No updates need action</span>
@@ -599,24 +599,6 @@
       <div class="feed" id="feed">
         <section class="day" data-date="2026-08-18">
   <h3 class="day-head"><time datetime="2026-08-18">18 August 2026</time></h3>
-<article class="card entry" data-impact="breaking">
-  <header class="entry-head">
-    <span class="tag tag-breaking">Action needed</span>
-  </header>
-  <h4>Changes to endpoints you may already be calling</h4>
-  <p class="summary">1 endpoint changed.</p>
-  <ul class="changes">
-    <li>
-      <p class="route">
-        <a href="https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb" target="_blank" rel="noopener"><span class="verb">GET</span><code>/api/v3/task/:projectUUID/statuses</code></a>
-        <span class="route-name">List Project Task Statuses</span>
-      </p>
-      <ul class="facts">
-        <li>Moved here from GET /api/v3/project/:projectUUID/statuses. Update the URL you call</li>
-      </ul>
-    </li>
-  </ul>
-</article>
 <article class="card entry" data-impact="review">
   <header class="entry-head">
     <span class="tag tag-review">Worth checking</span>
@@ -766,6 +748,7 @@
         <span class="route-name">List Project Task Statuses</span>
       </p>
       <ul class="facts">
+        <li>Now documented at this path. It was GET /api/v3/project/:projectUUID/statuses</li>
         <li>Description text updated</li>
         <li>Moved to the Tasks section (was Projects)</li>
       </ul>
