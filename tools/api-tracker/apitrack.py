@@ -452,7 +452,40 @@ def diff_snapshots(old: dict, new: dict) -> dict:
     old_routes = {r["route"] for r in oe.values()}
     new_routes = {r["route"] for r in ne.values()}
 
-    for key in sorted(set(oe) - set(ne)):
+    gone_keys = sorted(set(oe) - set(ne))
+    added_keys = sorted(set(ne) - set(oe))
+
+    # A request keeps its id in the collection when its path changes, so the same id on
+    # both sides of the diff is one request that MOVED — not a removal plus an unrelated
+    # addition. Reporting it as those two was the worst framing available: the page
+    # announced "no longer in the documentation" on an endpoint that was still there
+    # under a new path, and buried the new path in a different card as a new capability.
+    # One fact on the new route, telling the reader what to change, is the whole story.
+    old_ids = old.get("doc_ids") or {}
+    new_ids = new.get("doc_ids") or {}
+    id_to_added = {}
+    for key in added_keys:
+        doc_id = new_ids.get(key)
+        if doc_id:
+            id_to_added.setdefault(doc_id, key)
+    moved: dict[str, str] = {}
+    for key in gone_keys:
+        doc_id = old_ids.get(key)
+        target = id_to_added.get(doc_id) if doc_id else None
+        if target and target not in moved.values():
+            moved[key] = target
+
+    for old_key, new_key in moved.items():
+        changes.append(_change(
+            "breaking", "endpoint_moved", new_key, label=ne[new_key]["name"],
+            detail=f"endpoint moved: {oe[old_key]['route']} -> {ne[new_key]['route']}"))
+        # The pair has different keys, so the field-level comparison would otherwise be
+        # skipped and any other change to the same request lost.
+        changes.extend(diff_endpoint(new_key, oe[old_key], ne[new_key]))
+
+    for key in gone_keys:
+        if key in moved:
+            continue
         if oe[key]["route"] in new_routes:
             changes.append(_change(
                 "docs", "entry_rekeyed", key, label=oe[key]["name"],
@@ -462,7 +495,9 @@ def diff_snapshots(old: dict, new: dict) -> dict:
             changes.append(_change("breaking", "endpoint_removed", key,
                                    label=oe[key]["name"],
                                    detail="endpoint no longer in the documentation"))
-    for key in sorted(set(ne) - set(oe)):
+    for key in added_keys:
+        if key in moved.values():
+            continue
         if ne[key]["route"] in old_routes:
             # The route was already documented; the docs now describe it twice, or
             # under a new name. Nothing the reader calls has changed.
@@ -744,6 +779,8 @@ def render_changes(changes: list[dict], more: int = 0) -> list[str]:
     """
     parts = ['  <ul class="changes">']
     for block in changes:
+        if not block.get("items"):
+            continue  # every fact withdrawn; the route has nothing to say
         verb, path = endpoint_parts(block.get("endpoint", ""))
         docs = block.get("docs_url")
         parts.append("    <li>")
@@ -928,7 +965,8 @@ def alert_count(data: dict, entries: list[dict]) -> int:
 
 def build_page(data: dict) -> str:
     """Render the page fragment from the change log. Pure: no files written."""
-    entries = sorted(data.get("entries") or [], key=lambda e: e["date"], reverse=True)
+    entries = [e for e in sorted(data.get("entries") or [], key=lambda e: e["date"],
+                                 reverse=True) if renderable(e)]
     here = Path(__file__).resolve().parent
     template = (here / "template.html").read_text()
 
@@ -953,7 +991,8 @@ def build_page(data: dict) -> str:
 
 def cmd_build(args) -> int:
     data = json.loads(CHANGELOG.read_text())
-    entries = sorted(data.get("entries") or [], key=lambda e: e["date"], reverse=True)
+    entries = [e for e in sorted(data.get("entries") or [], key=lambda e: e["date"],
+                                 reverse=True) if renderable(e)]
     alert = alert_count(data, entries)
     page = build_page(data)
     PAGE_OUT.write_text(page)
@@ -1049,6 +1088,7 @@ HUMAN_RULES: list[tuple[str, object]] = [
     (r"renamed: (.+) -> (.+)", "Renamed to “\\2” (was “\\1”)"),
     (r"new endpoint in the API", "New endpoint"),
     (r"new endpoint in (.+)", r"New endpoint in the \1 section"),
+    (r"endpoint moved: (.+) -> (.+)", r"Moved here from \1. Update the URL you call"),
     (r"endpoint no longer in the documentation", "No longer in the documentation"),
     (r"new documentation entry for the existing route (.+)",
      r"Second documentation entry for the existing route \1"),
@@ -1070,6 +1110,119 @@ def human_detail(detail: str) -> str:
         if match:
             return match.expand(repl) if isinstance(repl, str) else repl(match)
     return text[:1].upper() + text[1:]
+
+
+def endpoint_facts(record: dict) -> dict:
+    """The named things a fact can claim were removed, as they stand in the docs now."""
+    responses = set()
+    for shape in (record.get("responses") or {}).values():
+        responses |= set(shape.get("fields") or [])
+    return {
+        "request": set((record.get("body") or {}).get("fields") or []),
+        "responses": responses,
+        "query": set(record.get("query") or {}),
+        "path_vars": set(record.get("path_vars") or []),
+    }
+
+
+def _named_after_colon(fact: str) -> list[str]:
+    """The comma-joined names a "... removed: a, b" fact points at."""
+    _, _, tail = fact.rpartition(": ")
+    return [n.strip() for n in tail.split(",") if n.strip()]
+
+
+def contradicted_by_docs(endpoint: str, fact: str, surface: dict) -> bool:
+    """Does the documentation as it stands right now disagree with this fact?
+
+    Only claims the live surface can actually settle are judged. Everything else —
+    wording, a renamed request, a section move — is left alone, because absence of
+    evidence is not contradiction and withdrawing a true entry is its own failure.
+
+    True means: publishing this would tell a customer something the documentation does
+    not say. That is the one error worth spending a fetch to avoid, because it is the
+    error that sends someone into their integration for nothing.
+    """
+    endpoints = surface.get("endpoints") or {}
+    present = endpoint in endpoints
+    record = endpoints.get(endpoint) or {}
+
+    if fact == "No longer in the documentation":
+        return present
+    if fact.startswith("New endpoint") or fact.startswith("Moved here from"):
+        return not present
+    if not present:
+        # The endpoint is gone, so nothing about its fields can be checked. The
+        # removal itself will be reported in its own right.
+        return False
+
+    now = endpoint_facts(record)
+    if fact.startswith("Request field removed") or fact.startswith("Request fields removed"):
+        names = _named_after_colon(fact)
+        return bool(names) and all(n in now["request"] for n in names)
+    if re.match(r"^Fields? removed from the .+ response: ", fact):
+        names = _named_after_colon(fact)
+        return bool(names) and all(n in now["responses"] for n in names)
+    if fact.startswith("Query parameter removed: "):
+        names = _named_after_colon(fact)
+        return bool(names) and all(n in now["query"] for n in names)
+    if fact.startswith("Path variable removed") or fact.startswith("Path variables removed"):
+        names = _named_after_colon(fact)
+        return bool(names) and all(n in now["path_vars"] for n in names)
+    return False
+
+
+def verify_against_docs(entries: list[dict], surface: dict, day: date) -> list[str]:
+    """Withdraw published facts that the current documentation contradicts.
+
+    The change log is a record of what a diff found on a given day, and a diff is only
+    ever true as of its snapshot. The documentation moves under it: an endpoint recorded
+    as gone reappears, a field recorded as removed comes back. Left alone, the page goes
+    on asserting it, and a customer opens their integration for a change that is not
+    there.
+
+    So every run re-checks the standing claims against the live surface and withdraws
+    the ones it disagrees with. Withdrawn facts are kept on the block under `withdrawn`
+    rather than deleted: the page stops saying it, and there is still a record of what
+    was said and when it was taken back.
+
+    Returns one line per withdrawal, for the run log.
+    """
+    notes = []
+    for entry in entries:
+        blocks = entry.get("changes")
+        if not blocks:
+            continue
+        for blk in blocks:
+            keep, drop = [], []
+            for fact in blk.get("items") or []:
+                if contradicted_by_docs(blk.get("endpoint", ""), fact, surface):
+                    drop.append(fact)
+                else:
+                    keep.append(fact)
+            if not drop:
+                continue
+            blk["items"] = keep
+            blk.setdefault("withdrawn", []).extend(drop)
+            blk["withdrawn_on"] = day.isoformat()
+            for fact in drop:
+                notes.append(f"withdrew from {entry['date']} {entry['impact']}: "
+                             f"{blk.get('endpoint', '')} — {fact}")
+        live = [b for b in blocks if b.get("items")]
+        entry["summary"] = ("1 endpoint changed." if len(live) == 1
+                           else f"{len(live)} endpoints changed.")
+    return notes
+
+
+def renderable(entry: dict) -> bool:
+    """An entry whose every fact has been withdrawn has nothing left to publish.
+
+    Curated entries carry no `changes` at all and are always renderable — the baseline
+    note is one of those.
+    """
+    blocks = entry.get("changes")
+    if blocks is None:
+        return True
+    return any(b.get("items") for b in blocks)
 
 
 def auto_entries(result: dict, day: date, doc_ids: dict | None = None) -> list[dict]:
@@ -1160,14 +1313,23 @@ def cmd_auto(args) -> int:
         # stable, and the alert band needs today's date to know that yesterday's
         # breaking change is no longer news. So stamp, rebuild, and ask to be committed
         # — the freshness claim is part of what this page publishes, not decoration.
-        if not stamp_check(data, today, new["endpoint_count"]):
+        # The surface has not moved since the last snapshot, but it may well have moved
+        # away from what the page still asserts about earlier days.
+        withdrawn = verify_against_docs(data.get("entries") or [], new, today)
+        stamped = stamp_check(data, today, new["endpoint_count"])
+        if not withdrawn and not stamped:
             print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints); "
                   "already stamped today, nothing to commit")
             return 0
+        for note in withdrawn:
+            print(f"  {note}")
         CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         write_page(data, args.out)
-        print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints); "
-              "check date updated and page rebuilt")
+        tail = "check date updated and page rebuilt"
+        if withdrawn:
+            tail = (f"withdrew {len(withdrawn)} fact{'' if len(withdrawn) == 1 else 's'} "
+                    "the docs no longer support; page rebuilt")
+        print(f"{today.isoformat()}: no change ({new['endpoint_count']} endpoints); {tail}")
         return 10
 
     result = diff_snapshots(old, new)
@@ -1203,6 +1365,12 @@ def cmd_auto(args) -> int:
     folded = sum(1 for e in added if e.get("_merged"))
     added = [e for e in added if not e.pop("_merged", False)]
     data["entries"] = added + kept
+    # Verify before publishing, standing claims included: a fact this run just derived
+    # is checked against the same surface it came from, and older ones against a
+    # documentation set that has had days to move on.
+    withdrawn = verify_against_docs(data["entries"], new, today)
+    for note in withdrawn:
+        print(f"  {note}")
     stamp_check(data, today, new["endpoint_count"])
     CHANGELOG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 

@@ -12,11 +12,12 @@
       "summary": "1 endpoint changed.",
       "changes": [
         {
-          "endpoint": "GET /api/v3/project/:projectUUID/statuses",
+          "endpoint": "GET /api/v3/task/:projectUUID/statuses",
           "label": "List Project Task Statuses",
           "items": [
-            "No longer in the documentation"
-          ]
+            "Moved here from GET /api/v3/project/:projectUUID/statuses. Update the URL you call"
+          ],
+          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
         }
       ]
     },
@@ -51,7 +52,7 @@
       "impact": "additive",
       "auto": true,
       "title": "New endpoints and fields",
-      "summary": "11 endpoints changed.",
+      "summary": "10 endpoints changed.",
       "changes": [
         {
           "endpoint": "GET /api/v3/net-rate-settings/list",
@@ -110,14 +111,6 @@
           "docs_url": "https://dev.wxrks.com/#6cb5b924-806e-4f9c-8a46-e233fc7d14e2"
         },
         {
-          "endpoint": "GET /api/v3/task/:projectUUID/statuses",
-          "label": "List Project Task Statuses",
-          "items": [
-            "New endpoint in the Tasks section"
-          ],
-          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
-        },
-        {
           "endpoint": "POST /api/v2/organization",
           "label": "Create Organization",
           "items": [
@@ -148,7 +141,7 @@
       "impact": "docs",
       "auto": true,
       "title": "Documentation updates",
-      "summary": "3 endpoints changed.",
+      "summary": "4 endpoints changed.",
       "changes": [
         {
           "endpoint": "GET /api/v3/project/:projectUUID",
@@ -157,6 +150,15 @@
             "Description text updated"
           ],
           "docs_url": "https://dev.wxrks.com/#0e39eab1-f14e-4546-a809-e810073f2e0a"
+        },
+        {
+          "endpoint": "GET /api/v3/task/:projectUUID/statuses",
+          "label": "List Project Task Statuses",
+          "items": [
+            "Description text updated",
+            "Moved to the Tasks section (was Projects)"
+          ],
+          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
         },
         {
           "endpoint": "POST /api/v3/project/:projectUUID/status",
@@ -198,7 +200,7 @@
       "impact": "additive",
       "auto": true,
       "title": "New endpoints and fields",
-      "summary": "19 endpoints changed.",
+      "summary": "18 endpoints changed.",
       "changes": [
         {
           "endpoint": "DELETE /api/v3/project/:ProjectUUID/work-unit/bulk",
@@ -291,10 +293,12 @@
         {
           "endpoint": "GET /api/v3/project/:projectUUID/statuses",
           "label": "List Project Task Statuses",
-          "items": [
+          "items": [],
+          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb",
+          "withdrawn": [
             "New endpoint in the Projects section"
           ],
-          "docs_url": "https://dev.wxrks.com/#3db81dcf-4f84-419e-ac8b-14ec2c0ecbdb"
+          "withdrawn_on": "2026-08-19"
         },
         {
           "endpoint": "GET /api/v3/user/:userUUID/rate",

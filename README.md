@@ -59,6 +59,31 @@ an alert that is always on is an alert nobody reads. When the history holds acti
 today is clear, the band reads "Nothing new needs action" rather than contradicting the tab count.
 The entries keep their own dates and tags, so nothing disappears from the feed.
 
+## Nothing is published that the current documentation contradicts
+
+A diff is only true as of its snapshot, and the documentation keeps moving under it. An
+endpoint recorded as gone reappears; a field recorded as removed comes back. Left alone the page goes
+on asserting it, and someone opens their integration for a change that is not there.
+
+So every daily run re-checks the standing claims against the live surface and withdraws the ones it
+disagrees with — a removal for an endpoint that is present, a new endpoint that is absent, a field
+reported removed that is back. Only claims the surface can actually settle are judged; wording, a
+rename or a section move are left alone, because absence of evidence is not contradiction and
+withdrawing a true entry is its own failure.
+
+Withdrawn facts are kept on the block under `withdrawn`, with `withdrawn_on`, rather than deleted.
+The page stops saying it and there is still a record of what was said and when it was taken back. An
+entry whose every fact has been withdrawn stops rendering and stops counting toward the alert.
+
+**A moved endpoint is reported as a move.** The collection keeps a request's id when its path
+changes, so the same id on both sides of a diff is one request that moved. Without that, a move came
+out as a breaking removal plus an unrelated new endpoint in a different card — the page announcing
+that an endpoint was gone when it was still there under a new path. It now reads as one fact on the
+new route, telling the reader which URL to change.
+
+One gap worth knowing: `build` renders without fetching, so a hand-edited change log can publish a
+contradicted claim until the next daily `auto` withdraws it.
+
 To replace an auto entry with reviewed wording, edit `data/api-changelog.json`: rewrite `title` and
 `summary`, add an `action`, and drop the `"auto": true` flag. The `action` renders as the **What to
 do** note, which is what tells a reader the entry was looked at by a person. Then rebuild:
