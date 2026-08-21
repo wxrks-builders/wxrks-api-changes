@@ -1,9 +1,26 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
-  "last_checked": "20 August 2026",
+  "last_checked": "21 August 2026",
   "endpoint_count": 176,
   "contact": "help@wxrks.com",
   "entries": [
+    {
+      "date": "2026-08-21",
+      "impact": "review",
+      "auto": true,
+      "title": "Changes worth checking against your integration",
+      "summary": "1 endpoint changed.",
+      "changes": [
+        {
+          "endpoint": "POST /api/v3/project/:projectUUID/download",
+          "label": "Download Project Translations Async",
+          "items": [
+            "Request fields removed: filenames[], projectStatus"
+          ],
+          "docs_url": "https://dev.wxrks.com/#1455b727-0aba-4510-8b48-f8e5801ddfce"
+        }
+      ]
+    },
     {
       "date": "2026-08-20",
       "impact": "additive",
@@ -400,5 +417,5 @@
       "docs_url": "https://dev.wxrks.com/"
     }
   ],
-  "last_checked_date": "2026-08-20"
+  "last_checked_date": "2026-08-21"
 }
