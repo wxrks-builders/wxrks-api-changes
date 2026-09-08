@@ -1,9 +1,34 @@
 {
   "_comment": "Curated, client-facing API change log. Generated diffs from tools/api-tracker/apitrack.py are reviewed by a human and written up here before the page is rebuilt. Impact values: breaking | review | additive | docs. Never add an entry that is not backed by a snapshot diff or a confirmed change from engineering.",
-  "last_checked": "7 September 2026",
-  "endpoint_count": 176,
+  "last_checked": "8 September 2026",
+  "endpoint_count": 178,
   "contact": "help@wxrks.com",
   "entries": [
+    {
+      "date": "2026-09-08",
+      "impact": "additive",
+      "auto": true,
+      "title": "New endpoints and fields",
+      "summary": "2 endpoints changed.",
+      "changes": [
+        {
+          "endpoint": "GET /api/v3/project/:projectUUID/message",
+          "label": "List Simple Notes",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#1a8d40ab-f4d9-9ebc-714f-2a8d3fbe5163"
+        },
+        {
+          "endpoint": "POST /api/v3/project/:projectUUID/message",
+          "label": "Create Simple Note",
+          "items": [
+            "New endpoint in the Projects section"
+          ],
+          "docs_url": "https://dev.wxrks.com/#f6ccdc22-f6bc-364f-2227-a130f37b438d"
+        }
+      ]
+    },
     {
       "date": "2026-08-21",
       "impact": "review",
@@ -402,5 +427,5 @@
       "docs_url": "https://dev.wxrks.com/"
     }
   ],
-  "last_checked_date": "2026-09-07"
+  "last_checked_date": "2026-09-08"
 }
